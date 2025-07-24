@@ -12,7 +12,7 @@ namespace SadPencil.Ra2CsfFile
 
         static Encoding1252Workaround()
         {
-            // Вручную задаем маппинг для символов 128-159 (Windows-1252 → Unicode)
+            // Manually set mapping for characters 128-159 (Windows-1252 → Unicode)
             var encoding1252ToUnicode = new Dictionary<Char, Char>
             {
                 { '\u20AC', '\u0080' }, // €

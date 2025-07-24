@@ -1,11 +1,7 @@
 # SadPencil.Ra2CsfFile
 
 ## .NET Library
-This is a .NET Standard 2.0 Library to load, edit, and save string table files (.csf) for Red Alert 2. Also, (de)serialize the string table from/to .ini files.
-
-## Example use
-
-See `ExampleApp/Program.cs` file.
+This is a .Net Framework v4.0 Library to load, edit, and save string table files (.csf) for Red Alert 2. Also, (de)serialize the string table from/to .ini files.
 
 ## License
 
@@ -17,6 +13,7 @@ Reference: https://modenc.renegadeprojects.com/CSF_File_Format
 ## Version History
 
 ```
+v2.1.3: downgrade to compatibility .Net Framework 4.0
 v2.1.2: disable Encoding1252WriteWorkaround by default; add CLSCompliant attribute to namespace SadPencil.Ra2CsfFile
 v2.1.1: fix that some label names are not loaded successfully from .ini files
 v2.1.0: api breaking change: change the behavior of Csf.AddLabel() with Add&Replace, so that the original ra2.csf file can be loaded

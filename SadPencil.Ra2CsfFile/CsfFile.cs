@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -279,7 +279,7 @@ namespace SadPencil.Ra2CsfFile
                     bw.Write(numLabels);
                     Int32 numValues = this.Labels.Count;
                     bw.Write(numValues);
-                    bw.Write((Int32)0); // unused
+                    bw.Write(0); // unused
                     bw.Write((Int32)this.Language);
 
                     // write labels
@@ -297,7 +297,7 @@ namespace SadPencil.Ra2CsfFile
                             throw new InvalidDataException($"Invalid characters found in label name \"{labelName}\".");
 
                         bw.Write(Encoding.ASCII.GetBytes(" LBL"));
-                        bw.Write((Int32)1);
+                        bw.Write(1);
                         Byte[] labelNameBytes = Encoding.ASCII.GetBytes(labelName);
                         bw.Write(labelNameBytes.Length);
                         bw.Write(labelNameBytes);

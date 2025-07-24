@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 namespace SadPencil.Ra2CsfFile
 {
     /// <summary>
-    /// Вспомогательный класс для работы с INI-файлами, представляющими таблицы строк CSF.
+    /// Helper class for working with INI files representing CSF string tables.
     /// </summary>
     public static class CsfFileIniHelper
     {
@@ -27,7 +27,7 @@ namespace SadPencil.Ra2CsfFile
             AllowDuplicateKeys = false,
             AllowDuplicateSections = false,
             AllowKeysWithoutSection = false,
-            CommentRegex = new Regex("a^"), // ничего не совпадает
+            CommentRegex = new Regex("a^"), // nothing matches
             CaseInsensitive = true,
             AssigmentSpacer = String.Empty,
             SectionRegex = new Regex("^(\\s*?)\\[{1}\\s*[\\p{L}\\p{P}\\p{M}_\\\"\\'\\{\\}\\#\\+\\;\\*\\%\\(\\)\\=\\?\\&\\$\\^\\<\\>\\`\\^|\\,\\:\\/\\.\\-\\w\\d\\s\\\\\\~]+\\s*\\](\\s*?)$"),
@@ -48,22 +48,22 @@ namespace SadPencil.Ra2CsfFile
         }
 
         /// <summary>
-        /// Загружает CSF-файл из INI-представления.
+        /// Loads a CSF file from an INI view.
         /// </summary>
-        /// <param name="stream">Поток с INI-файлом.</param>
-        /// <returns>Загруженный CSF-файл.</returns>
-        /// <exception cref="ArgumentNullException">Если поток равен null.</exception>
-        /// <exception cref="InvalidDataException">Если формат файла неверный.</exception>
+        /// <param name="stream">Stream with INI file.</param>
+        /// <returns>Uploaded CSF file.</returns>
+        /// <exception cref="ArgumentNullException">If the stream is null.</exception>
+        /// <exception cref="InvalidDataException">If the file format is incorrect.</exception>
         public static CsfFile LoadFromIniFile(Stream stream) => LoadFromIniFile(stream, new CsfFileOptions());
 
         /// <summary>
-        /// Загружает CSF-файл из INI-представления с указанными опциями.
+        /// Loads a CSF file from an INI view with the specified options.
         /// </summary>
-        /// <param name="stream">Поток с INI-файлом.</param>
-        /// <param name="options">Опции загрузки.</param>
-        /// <returns>Загруженный CSF-файл.</returns>
-        /// <exception cref="ArgumentNullException">Если поток или опции равны null.</exception>
-        /// <exception cref="InvalidDataException">Если формат файла неверный.</exception>
+        /// <param name="stream">Stream with INI file.</param>
+        /// <param name="options">Download options.</param>
+        /// <returns>Uploaded CSF file.</returns>
+        /// <exception cref="ArgumentNullException">If the stream is null.</exception>
+        /// <exception cref="InvalidDataException">If the file format is incorrect.</exception>
         public static CsfFile LoadFromIniFile(Stream stream, CsfFileOptions options)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
@@ -77,18 +77,18 @@ namespace SadPencil.Ra2CsfFile
 
             var header = ini.Sections[INI_FILE_HEADER_SECTION_NAME];
 
-            // Проверка версии
+            // Checking the version
             if (!header.ContainsKey(INI_FILE_HEADER_INI_VERSION_KEY))
                 throw new InvalidDataException($"Invalid {INI_TYPE_NAME} file. Missing key \"{INI_FILE_HEADER_INI_VERSION_KEY}\".");
 
             if (Convert.ToInt32(header[INI_FILE_HEADER_INI_VERSION_KEY], CultureInfo.InvariantCulture) != INI_VERSION)
                 throw new InvalidDataException($"Unknown {INI_TYPE_NAME} file version. Expected {INI_VERSION}.");
 
-            // Загрузка метаданных
+            // Loading metadata
             csf.Version = Convert.ToInt32(header[INI_FILE_HEADER_CSF_VERSION_KEY], CultureInfo.InvariantCulture);
             csf.Language = CsfLangHelper.GetCsfLang(Convert.ToInt32(header[INI_FILE_HEADER_CSF_LANGUAGE_KEY], CultureInfo.InvariantCulture));
 
-            // Загрузка меток
+            // Loading label
             foreach (var section in ini.Sections)
             {
                 if (section.SectionName == INI_FILE_HEADER_SECTION_NAME) continue;
@@ -122,12 +122,12 @@ namespace SadPencil.Ra2CsfFile
             "Value" + (lineIndex == 1 ? string.Empty : $"Line{lineIndex.ToString(CultureInfo.InvariantCulture)}");
 
         /// <summary>
-        /// Сохраняет CSF-файл в INI-представление.
+        /// Saves a CSF file to an INI representation.
         /// </summary>
-        /// <param name="csf">CSF-файл для сохранения.</param>
-        /// <param name="stream">Поток для записи.</param>
-        /// <exception cref="ArgumentNullException">Если файл или поток равны null.</exception>
-        /// <exception cref="InvalidDataException">Если обнаружены недопустимые символы в именах меток.</exception>
+        /// <param name="csf">CSF file to save.</param>
+        /// <param name="stream">Stream for recording.</param>
+        /// <exception cref="ArgumentNullException">If the file or stream is null.</exception>
+        /// <exception cref="InvalidDataException">If invalid characters are found in label names.</exception>
         public static void WriteIniFile(CsfFile csf, Stream stream)
         {
             if (csf == null) throw new ArgumentNullException(nameof(csf));
@@ -135,14 +135,14 @@ namespace SadPencil.Ra2CsfFile
 
             var ini = GetIniData();
 
-            // Запись заголовка
+            // Header record
             ini.Sections.AddSection(INI_FILE_HEADER_SECTION_NAME);
             var header = ini.Sections[INI_FILE_HEADER_SECTION_NAME];
             header.AddKey(INI_FILE_HEADER_INI_VERSION_KEY, INI_VERSION.ToString(CultureInfo.InvariantCulture));
             header.AddKey(INI_FILE_HEADER_CSF_VERSION_KEY, csf.Version.ToString(CultureInfo.InvariantCulture));
             header.AddKey(INI_FILE_HEADER_CSF_LANGUAGE_KEY, ((int)csf.Language).ToString(CultureInfo.InvariantCulture));
 
-            // Запись меток
+            // Labels record
             foreach (var label in csf.Labels)
             {
                 string labelName = label.Key;
