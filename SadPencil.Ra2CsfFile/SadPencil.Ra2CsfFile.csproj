@@ -14,7 +14,7 @@
         <FileAlignment>512</FileAlignment>
         <Deterministic>true</Deterministic>
 
-        <!-- Отключаем автоматическую генерацию AssemblyInfo -->
+        <!-- Disable automatic generation of AssemblyInfo -->
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
         <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
         <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -62,7 +62,7 @@
     </ItemGroup>
 
     <PropertyGroup>
-        <!-- Настройки NuGet пакета -->
+        <!-- NuGet Package Settings -->
         <PackageId>SadPencil.Ra2CsfFile</PackageId>
         <Title>RA2 CSF File Library</Title>
         <Version>2.1.3</Version>

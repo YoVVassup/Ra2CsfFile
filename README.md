@@ -8,7 +8,8 @@ This is a .Net Framework v4.0 Library to load, edit, and save string table files
 MIT
 
 ## Notes
-Reference: https://modenc.renegadeprojects.com/CSF_File_Format
+Reference: https://modenc.renegadeprojects.com/CSF_File_Format  
+Easy to get .Net Target Framework SDK: Run [Get_.NET_Target_Framework.ps1](https://github.com/YoVVassup/Ra2CsfFile/blob/main/Get_.NET_Target_Framework.ps1)
 
 ## Version History
 
