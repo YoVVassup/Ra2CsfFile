@@ -5,14 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
 namespace SadPencil.Ra2CsfFile
 {
     /// <summary>
-    /// A helper class for CsfFile class. It focus on loading/writing .ini files that represents the string table, which can be regarded as a replacement of .csf files.
+    /// Вспомогательный класс для работы с INI-файлами, представляющими таблицы строк CSF.
     /// </summary>
     public static class CsfFileIniHelper
     {
@@ -28,13 +27,13 @@ namespace SadPencil.Ra2CsfFile
             AllowDuplicateKeys = false,
             AllowDuplicateSections = false,
             AllowKeysWithoutSection = false,
-            CommentRegex = new System.Text.RegularExpressions.Regex("a^"), // match nothing
+            CommentRegex = new Regex("a^"), // ничего не совпадает
             CaseInsensitive = true,
             AssigmentSpacer = String.Empty,
             SectionRegex = new Regex("^(\\s*?)\\[{1}\\s*[\\p{L}\\p{P}\\p{M}_\\\"\\'\\{\\}\\#\\+\\;\\*\\%\\(\\)\\=\\?\\&\\$\\^\\<\\>\\`\\^|\\,\\:\\/\\.\\-\\w\\d\\s\\\\\\~]+\\s*\\](\\s*?)$"),
         };
 
-        private static IniData GetIniData() => new IniData() { Configuration = IniParserConfiguration, };
+        private static IniData GetIniData() => new IniData() { Configuration = IniParserConfiguration };
 
         private static IniDataParser GetIniDataParser() => new IniDataParser(IniParserConfiguration);
 
@@ -49,152 +48,117 @@ namespace SadPencil.Ra2CsfFile
         }
 
         /// <summary>
-        /// Load an existing ini file that represent the stringtable.
+        /// Загружает CSF-файл из INI-представления.
         /// </summary>
-        /// <param name="stream">The file stream of an ini file.</param>
+        /// <param name="stream">Поток с INI-файлом.</param>
+        /// <returns>Загруженный CSF-файл.</returns>
+        /// <exception cref="ArgumentNullException">Если поток равен null.</exception>
+        /// <exception cref="InvalidDataException">Если формат файла неверный.</exception>
         public static CsfFile LoadFromIniFile(Stream stream) => LoadFromIniFile(stream, new CsfFileOptions());
+
         /// <summary>
-        /// Load an existing ini file that represent the stringtable.
+        /// Загружает CSF-файл из INI-представления с указанными опциями.
         /// </summary>
-        /// <param name="stream">The file stream of an ini file.</param>
-        /// <param name="options">The CsfFileOptions.</param>
+        /// <param name="stream">Поток с INI-файлом.</param>
+        /// <param name="options">Опции загрузки.</param>
+        /// <returns>Загруженный CSF-файл.</returns>
+        /// <exception cref="ArgumentNullException">Если поток или опции равны null.</exception>
+        /// <exception cref="InvalidDataException">Если формат файла неверный.</exception>
         public static CsfFile LoadFromIniFile(Stream stream, CsfFileOptions options)
         {
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (options == null) throw new ArgumentNullException(nameof(options));
 
             var csf = new CsfFile(options);
-
             var ini = ParseIni(stream);
+
             if (!ini.Sections.ContainsSection(INI_FILE_HEADER_SECTION_NAME))
-            {
-                throw new Exception($"Invalid {INI_TYPE_NAME} file. Missing section [{INI_FILE_HEADER_SECTION_NAME}].");
-            }
+                throw new InvalidDataException($"Invalid {INI_TYPE_NAME} file. Missing section [{INI_FILE_HEADER_SECTION_NAME}].");
+
             var header = ini.Sections[INI_FILE_HEADER_SECTION_NAME];
 
-            // load header
+            // Проверка версии
             if (!header.ContainsKey(INI_FILE_HEADER_INI_VERSION_KEY))
-            {
-                throw new Exception($"Invalid {INI_TYPE_NAME} file. Missing key \"{INI_FILE_HEADER_INI_VERSION_KEY}\" in section [{INI_FILE_HEADER_SECTION_NAME}].");
-            }
-            String iniVersion = header[INI_FILE_HEADER_INI_VERSION_KEY];
-            if (Convert.ToInt32(iniVersion, CultureInfo.InvariantCulture) != INI_VERSION)
-            {
-                throw new Exception($"Unknown {INI_TYPE_NAME} file version. The version should be {INI_VERSION}. Is this a {INI_TYPE_NAME} file from future?");
-            }
+                throw new InvalidDataException($"Invalid {INI_TYPE_NAME} file. Missing key \"{INI_FILE_HEADER_INI_VERSION_KEY}\".");
 
-            if (!header.ContainsKey(INI_FILE_HEADER_CSF_VERSION_KEY))
-            {
-                throw new Exception($"Invalid {INI_TYPE_NAME} file. Missing key \"{INI_FILE_HEADER_CSF_VERSION_KEY}\" in section [{INI_FILE_HEADER_SECTION_NAME}].");
-            }
-            String csfVersion = header[INI_FILE_HEADER_CSF_VERSION_KEY];
-            csf.Version = Convert.ToInt32(csfVersion, CultureInfo.InvariantCulture);
+            if (Convert.ToInt32(header[INI_FILE_HEADER_INI_VERSION_KEY], CultureInfo.InvariantCulture) != INI_VERSION)
+                throw new InvalidDataException($"Unknown {INI_TYPE_NAME} file version. Expected {INI_VERSION}.");
 
-            if (!header.ContainsKey(INI_FILE_HEADER_CSF_LANGUAGE_KEY))
-            {
-                throw new Exception($"Invalid {INI_TYPE_NAME} file. Missing key \"{INI_FILE_HEADER_CSF_LANGUAGE_KEY}\" in section [{INI_FILE_HEADER_SECTION_NAME}].");
-            }
-            String csfLang = header[INI_FILE_HEADER_CSF_LANGUAGE_KEY];
-            csf.Language = CsfLangHelper.GetCsfLang(Convert.ToInt32(csfLang, CultureInfo.InvariantCulture));
+            // Загрузка метаданных
+            csf.Version = Convert.ToInt32(header[INI_FILE_HEADER_CSF_VERSION_KEY], CultureInfo.InvariantCulture);
+            csf.Language = CsfLangHelper.GetCsfLang(Convert.ToInt32(header[INI_FILE_HEADER_CSF_LANGUAGE_KEY], CultureInfo.InvariantCulture));
 
-            // load all labels
-            var labelSections = new Dictionary<String, KeyDataCollection>();
-            foreach (var (k, v) in ini.Sections.Where(section => section.SectionName != INI_FILE_HEADER_SECTION_NAME)
-                .Select(section => (section.SectionName, ini.Sections[section.SectionName])))
+            // Загрузка меток
+            foreach (var section in ini.Sections)
             {
-                labelSections.Add(k, v);
-            }
+                if (section.SectionName == INI_FILE_HEADER_SECTION_NAME) continue;
 
-            foreach (var keyValuePair in labelSections)
-            {
-                String labelName = keyValuePair.Key;
-                var key = keyValuePair.Value;
+                string labelName = section.SectionName;
+                var key = section.Keys;
 
                 if (!CsfFile.ValidateLabelName(labelName))
+                    throw new InvalidDataException($"Invalid characters in label name \"{labelName}\".");
+
+                var valueParts = new List<string>();
+                for (int iLine = 1; ; iLine++)
                 {
-                    throw new Exception($"Invalid characters found in label name \"{labelName}\".");
+                    string keyName = GetIniLabelValueKeyName(iLine);
+                    if (!key.ContainsKey(keyName)) break;
+                    valueParts.Add(key[keyName]);
                 }
 
-                var valueSplited = new List<String>();
-                for (Int32 iLine = 1; ; iLine++)
+                if (valueParts.Count > 0)
                 {
-                    String keyName = GetIniLabelValueKeyName(iLine);
-
-                    if (!key.ContainsKey(keyName))
-                    {
-                        break;
-                    }
-
-                    valueSplited.Add(key[keyName]);
-                }
-
-                if (valueSplited.Count != 0)
-                {
-                    String labelValue = String.Join(CsfFile.LineBreakCharacters, valueSplited);
+                    string labelValue = string.Join(CsfFile.LineBreakCharacters, valueParts);
                     labelName = CsfFile.LowercaseLabelName(labelName);
-                    _ = csf.AddLabel(labelName, labelValue);
+                    csf.AddLabel(labelName, labelValue);
                 }
-
             }
 
             return csf;
         }
 
-        private static String GetIniLabelValueKeyName(Int32 lineIndex) => "Value" + ((lineIndex == 1) ? String.Empty : $"Line{lineIndex.ToString(CultureInfo.InvariantCulture)}");
+        private static string GetIniLabelValueKeyName(int lineIndex) => 
+            "Value" + (lineIndex == 1 ? string.Empty : $"Line{lineIndex.ToString(CultureInfo.InvariantCulture)}");
 
         /// <summary>
-        /// Write an ini file that represent the stringtable.
+        /// Сохраняет CSF-файл в INI-представление.
         /// </summary>
-        /// <param name="csf">The CsfFile object to be written.</param>
-        /// <param name="stream">The file stream of a new ini file.</param>
+        /// <param name="csf">CSF-файл для сохранения.</param>
+        /// <param name="stream">Поток для записи.</param>
+        /// <exception cref="ArgumentNullException">Если файл или поток равны null.</exception>
+        /// <exception cref="InvalidDataException">Если обнаружены недопустимые символы в именах меток.</exception>
         public static void WriteIniFile(CsfFile csf, Stream stream)
         {
-            if (csf == null)
-            {
-                throw new ArgumentNullException(nameof(csf));
-            }
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
+            if (csf == null) throw new ArgumentNullException(nameof(csf));
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
 
             var ini = GetIniData();
 
-            // write headers
-            _ = ini.Sections.AddSection(INI_FILE_HEADER_SECTION_NAME);
+            // Запись заголовка
+            ini.Sections.AddSection(INI_FILE_HEADER_SECTION_NAME);
             var header = ini.Sections[INI_FILE_HEADER_SECTION_NAME];
-            _ = header.AddKey(INI_FILE_HEADER_INI_VERSION_KEY, INI_VERSION.ToString(CultureInfo.InvariantCulture));
-            _ = header.AddKey(INI_FILE_HEADER_CSF_VERSION_KEY, csf.Version.ToString(CultureInfo.InvariantCulture));
-            _ = header.AddKey(INI_FILE_HEADER_CSF_LANGUAGE_KEY, ((Int32)csf.Language).ToString(CultureInfo.InvariantCulture));
+            header.AddKey(INI_FILE_HEADER_INI_VERSION_KEY, INI_VERSION.ToString(CultureInfo.InvariantCulture));
+            header.AddKey(INI_FILE_HEADER_CSF_VERSION_KEY, csf.Version.ToString(CultureInfo.InvariantCulture));
+            header.AddKey(INI_FILE_HEADER_CSF_LANGUAGE_KEY, ((int)csf.Language).ToString(CultureInfo.InvariantCulture));
 
-            // write labels
-            foreach (var labelNameValues in csf.Labels)
+            // Запись меток
+            foreach (var label in csf.Labels)
             {
-                String labelName = labelNameValues.Key;
-                String labelValue = labelNameValues.Value;
+                string labelName = label.Key;
+                string labelValue = label.Value;
 
                 if (!CsfFile.ValidateLabelName(labelName))
-                {
-                    throw new Exception($"Invalid characters found in label name \"{labelName}\".");
-                }
+                    throw new InvalidDataException($"Invalid characters in label name \"{labelName}\".");
 
-                _ = ini.Sections.AddSection(labelName);
+                ini.Sections.AddSection(labelName);
                 var labelSection = ini.Sections[labelName];
+                string[] valueLines = labelValue.Split(CsfFile.LineBreakCharacters.ToCharArray());
 
-                String value = labelValue;
-                String[] valueSplited = value.Split(CsfFile.LineBreakCharacters.ToCharArray());
-                for (Int32 iLine = 1; iLine <= valueSplited.Length; iLine++)
+                for (int i = 0; i < valueLines.Length; i++)
                 {
-                    String keyName = GetIniLabelValueKeyName(iLine);
-                    String keyValue = valueSplited[iLine - 1];
-
-                    _ = labelSection.AddKey(keyName, keyValue);
+                    string keyName = GetIniLabelValueKeyName(i + 1);
+                    labelSection.AddKey(keyName, valueLines[i]);
                 }
             }
 
