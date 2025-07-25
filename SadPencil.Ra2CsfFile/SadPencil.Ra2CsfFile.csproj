@@ -45,16 +45,21 @@
         <Reference Include="System" />
         <Reference Include="System.Core" />
         <Reference Include="System.Xml" />
+        <Reference Include="System.Runtime.Serialization" />
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="ini-parser-netstandard" Version="2.5.3" />
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+        <PackageReference Include="YamlDotNet" Version="8.1.2" />
     </ItemGroup>
 
     <ItemGroup>
         <Compile Include="CsfFile.cs" />
         <Compile Include="CsfFileIniHelper.cs" />
+        <Compile Include="CsfFileJsonHelper.cs" />
         <Compile Include="CsfFileOptions.cs" />
+        <Compile Include="CsfFileYamlHelper.cs" />
         <Compile Include="CsfLang.cs" />
         <Compile Include="CsfLangHelper.cs" />
         <Compile Include="Encoding1252Workaround.cs" />
@@ -65,14 +70,14 @@
         <!-- NuGet Package Settings -->
         <PackageId>SadPencil.Ra2CsfFile</PackageId>
         <Title>RA2 CSF File Library</Title>
-        <Version>2.1.3</Version>
+        <Version>2.2.0</Version>
         <Authors>sadpencil</Authors>
-        <Description>Load, edit, and save string table files (.csf) for Red Alert 2. Also, (de)serialize the string table from/to .ini files.</Description>
+        <Description>Load, edit, and save string table files (.csf) for Red Alert 2. Supports .ini, .json and .yaml formats.</Description>
         <PackageProjectUrl>https://github.com/YoVVassup/Ra2CsfFile</PackageProjectUrl>
         <RepositoryUrl>https://github.com/YoVVassup/Ra2CsfFile</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>CSF Westwood Red-Alert-2 RA2</PackageTags>
-        <PackageReleaseNotes>disable Encoding1252WriteWorkaround by default; add CLSCompliant attribute to namespace SadPencil.Ra2CsfFile</PackageReleaseNotes>
+        <PackageReleaseNotes>Added JSON and YAML serialization support</PackageReleaseNotes>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>

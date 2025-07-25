@@ -43,11 +43,6 @@ namespace SadPencil.Ra2CsfFile
         /// <summary>
         /// Add or replace a label to the string table.
         /// </summary>
-        /// <param name="labelName">The label name. Must be lowercase.</param>
-        /// <param name="labelValue">The label value.</param>
-        /// <returns>True if an existing element is found and replaced.</returns>
-        /// <exception cref="ArgumentException">If label name is invalid.</exception>
-        /// <exception cref="ArgumentNullException">If label name or value is null.</exception>
         public Boolean AddLabel(String labelName, String labelValue)
         {
             if (labelName == null) throw new ArgumentNullException(nameof(labelName));
@@ -72,8 +67,6 @@ namespace SadPencil.Ra2CsfFile
         /// <summary>
         /// Remove a label from the string table.
         /// </summary>
-        /// <param name="labelName">The label name.</param>
-        /// <returns>True if the element is found and removed.</returns>
         public Boolean RemoveLabel(String labelName) => this._labels.Remove(labelName);
 
         /// <summary>
@@ -84,8 +77,6 @@ namespace SadPencil.Ra2CsfFile
         /// <summary>
         /// Create an empty stringtable file with given options.
         /// </summary>
-        /// <param name="options">The CsfFileOptions.</param>
-        /// <exception cref="ArgumentNullException">If options is null.</exception>
         public CsfFile(CsfFileOptions options)
         {
             this.Options = options ?? throw new ArgumentNullException(nameof(options));
@@ -94,8 +85,6 @@ namespace SadPencil.Ra2CsfFile
         /// <summary>
         /// Clone the CsfFile.
         /// </summary>
-        /// <param name="csf">The CsfFile object.</param>
-        /// <exception cref="ArgumentNullException">If csf is null.</exception>
         public CsfFile(CsfFile csf)
         {
             if (csf == null) throw new ArgumentNullException(nameof(csf));
@@ -109,28 +98,17 @@ namespace SadPencil.Ra2CsfFile
         /// <summary>
         /// Creates a new object that is a copy of the current instance.
         /// </summary>
-        /// <returns>A new object that is a copy of this instance.</returns>
         public Object Clone() => new CsfFile(this);
 
+        #region CSF File Operations
         /// <summary>
         /// Load an existing stringtable file (.csf).
         /// </summary>
-        /// <param name="stream">The file stream of a stringtable file (.csf).</param>
-        /// <returns>The loaded CsfFile.</returns>
-        /// <exception cref="ArgumentNullException">If stream is null.</exception>
-        /// <exception cref="InvalidDataException">If file format is invalid.</exception>
-        /// <exception cref="IOException">If I/O error occurs.</exception>
         public static CsfFile LoadFromCsfFile(Stream stream) => LoadFromCsfFile(stream, new CsfFileOptions());
 
         /// <summary>
         /// Load an existing stringtable file (.csf) with options.
         /// </summary>
-        /// <param name="stream">The file stream of a stringtable file (.csf).</param>
-        /// <param name="options">The CsfFileOptions.</param>
-        /// <returns>The loaded CsfFile.</returns>
-        /// <exception cref="ArgumentNullException">If stream or options are null.</exception>
-        /// <exception cref="InvalidDataException">If file format is invalid.</exception>
-        /// <exception cref="IOException">If I/O error occurs.</exception>
         public static CsfFile LoadFromCsfFile(Stream stream, CsfFileOptions options)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
@@ -258,10 +236,6 @@ namespace SadPencil.Ra2CsfFile
         /// <summary>
         /// Write a stringtable file (.csf).
         /// </summary>
-        /// <param name="stream">The file stream of a new stringtable file (.csf).</param>
-        /// <exception cref="ArgumentNullException">If stream is null.</exception>
-        /// <exception cref="InvalidDataException">If label data is invalid.</exception>
-        /// <exception cref="IOException">If I/O error occurs.</exception>
         public void WriteCsfFile(Stream stream)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
@@ -324,21 +298,80 @@ namespace SadPencil.Ra2CsfFile
                 throw new IOException("Error writing CSF file.", ex);
             }
         }
+        #endregion
+
+        #region INI File Operations
+        /// <summary>
+        /// Load a CSF file from an INI representation.
+        /// </summary>
+        public static CsfFile LoadFromIniFile(Stream stream) => 
+            CsfFileIniHelper.LoadFromIniFile(stream, new CsfFileOptions());
 
         /// <summary>
-        /// Check whether the name of a label is valid. A valid label name is an ASCII string without control characters.
+        /// Load a CSF file from an INI representation with options.
         /// </summary>
-        /// <param name="labelName">The name of a label to be checked.</param>
-        /// <returns>Whether the name is valid or not.</returns>
+        public static CsfFile LoadFromIniFile(Stream stream, CsfFileOptions options) => 
+            CsfFileIniHelper.LoadFromIniFile(stream, options);
+
+        /// <summary>
+        /// Save the CSF file to an INI representation.
+        /// </summary>
+        public void WriteIniFile(Stream stream) => 
+            CsfFileIniHelper.WriteIniFile(this, stream);
+        #endregion
+
+        #region JSON File Operations
+        /// <summary>
+        /// Load a CSF file from a JSON representation.
+        /// </summary>
+        public static CsfFile LoadFromJsonFile(Stream stream) => 
+            CsfFileJsonHelper.LoadFromJsonFile(stream, new CsfFileOptions());
+
+        /// <summary>
+        /// Load a CSF file from a JSON representation with options.
+        /// </summary>
+        public static CsfFile LoadFromJsonFile(Stream stream, CsfFileOptions options) => 
+            CsfFileJsonHelper.LoadFromJsonFile(stream, options);
+
+        /// <summary>
+        /// Save the CSF file to a JSON representation.
+        /// </summary>
+        public void WriteJsonFile(Stream stream) => 
+            CsfFileJsonHelper.WriteJsonFile(this, stream);
+        #endregion
+
+        #region YAML File Operations
+        /// <summary>
+        /// Load a CSF file from a YAML representation.
+        /// </summary>
+        public static CsfFile LoadFromYamlFile(Stream stream) => 
+            CsfFileYamlHelper.LoadFromYamlFile(stream, new CsfFileOptions());
+
+        /// <summary>
+        /// Load a CSF file from a YAML representation with options.
+        /// </summary>
+        public static CsfFile LoadFromYamlFile(Stream stream, CsfFileOptions options) => 
+            CsfFileYamlHelper.LoadFromYamlFile(stream, options);
+
+        /// <summary>
+        /// Save the CSF file to a YAML representation.
+        /// </summary>
+        public void WriteYamlFile(Stream stream) => 
+            CsfFileYamlHelper.WriteYamlFile(this, stream);
+        #endregion
+
+        #region Helper Methods
+        /// <summary>
+        /// Check whether the name of a label is valid.
+        /// </summary>
         public static Boolean ValidateLabelName(String labelName) =>
             !string.IsNullOrEmpty(labelName) && !labelName.ToCharArray().Any(c => (c < 32 || c >= 127));
 
         /// <summary>
         /// Converts label name to lowercase for case-insensitive comparison.
         /// </summary>
-        /// <param name="labelName">The label name to be converted.</param>
-        /// <returns>Lowercase label name.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Globalization", "CA1308:Normalize strings to uppercase")]
         public static String LowercaseLabelName(String labelName) => labelName?.ToLowerInvariant();
+        #endregion
     }
 }
