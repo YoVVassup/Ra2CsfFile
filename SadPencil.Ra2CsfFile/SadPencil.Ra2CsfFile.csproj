@@ -71,14 +71,14 @@
         <!-- NuGet Package Settings -->
         <PackageId>SadPencil.Ra2CsfFile</PackageId>
         <Title>RA2 CSF File Library</Title>
-        <Version>2.2.0</Version>
+        <Version>2.2.1</Version>
         <Authors>sadpencil</Authors>
-        <Description>Load, edit, and save string table files (.csf) for Red Alert 2. Supports .ini, .json and .yaml formats.</Description>
+        <Description>Load, edit, and save string table files (.csf) for Red Alert 2. Supports .ini, .json, .llf and .yaml formats.</Description>
         <PackageProjectUrl>https://github.com/YoVVassup/Ra2CsfFile</PackageProjectUrl>
         <RepositoryUrl>https://github.com/YoVVassup/Ra2CsfFile</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <PackageTags>CSF Westwood Red-Alert-2 RA2</PackageTags>
-        <PackageReleaseNotes>Added JSON and YAML serialization support</PackageReleaseNotes>
+        <PackageReleaseNotes>Added LLF serialization support</PackageReleaseNotes>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
