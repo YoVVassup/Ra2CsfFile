@@ -7,11 +7,12 @@ CsfStudio is a powerful command-line tool for working with Red Alert 2 string ta
 
 ## Features
 
-- 🔄 Bidirectional conversion between CSF, INI, JSON, YAML, and LLF formats  
-- 🧩 Merge multiple string tables into one  
-- ✂️ Subtract labels from one string table using another  
-- 📊 Preserve metadata (version, language) across conversions  
-- ✅ Strict validation of label names and formats  
+- 🔄 **Bidirectional Conversion**: Convert between CSF, INI, JSON, YAML, and LLF formats  
+- 🧩 **Merge Operations**: Combine multiple string tables into one  
+- ✂️ **Subtract Operations**: Remove labels present in other files  
+- 🔠 **Encoding Fix**: Correct text encoding issues in existing files  
+- 📊 **Metadata Preservation**: Maintain version and language information  
+- ✅ **Validation**: Strict label name and format validation
 - ⚡ Fast processing with .NET Framework 4.0
 
 ## Supported Formats
@@ -99,51 +100,76 @@ KEY_MULTILINE: >-
     value  
 ```
 
+## Encoding Fix Feature
+
+Fix incorrectly interpreted text encoding with `--fix-encoding`:
+
+```bash
+CsfStudio.exe -i input.csf -o fixed.csf --fix-encoding windows-1251
+```
+
+**Supported Encodings**:  
+- `gb18030` (Chinese)  
+- `gb2312` (Chinese)
+- `windows-1251` (Cyrillic)  
+- `windows-1252` (Western European)  
+- `iso-8859-1` (Latin-1)  
+- `utf-8`  
+- `unicode` (UTF-16)
+
 ## Command Line Usage
 
 ### Basic Syntax
 ```bash  
-CsfStudio.exe -i INPUT -o OUTPUT --to-FORMAT  
-CsfStudio.exe -i FILE1,FILE2 -o RESULT --operation  
+CsfStudio.exe -i input.ext -o output.ext --to-format  
+CsfStudio.exe -i file1.ext,file2.ext -o result.ext --operation  
 ```
 
 ### Operations
-| Command       | Description                                  |  
-|---------------|----------------------------------------------|  
-| `--to-ini`    | Convert to INI format                        |  
-| `--to-csf`    | Convert to CSF format                        |  
-| `--to-json`   | Convert to JSON format                       |  
-| `--to-yaml`   | Convert to YAML format                       |  
-| `--to-llf`    | Convert to LLF format                        |  
-| `--merge`     | Merge multiple files                         |  
-| `--subtract`  | Remove labels present in other files         |  
+| Command           | Description                      |  
+|-------------------|----------------------------------| 
+| `-i`, `--input`   | Input file path(s)               | 
+| `-o`, `--output`  | Output file path                 | 
+| `--to-ini`        | Convert to INI format            |  
+| `--to-csf`        | Convert to CSF format            |  
+| `--to-json`       | Convert to JSON format           |  
+| `--to-yaml`       | Convert to YAML format           |  
+| `--to-llf`        | Convert to LLF format            |  
+| `--merge`         | Merge multiple files             |  
+| `--subtract`      | Subtract labels from other files |  
+| `--fix-encoding`  | Fix text encoding                |  
+| `-h`, `--help`    | Show help                        | 
 
 ### Examples
 ```bash
 # Convert CSF to LLF
-CsfStudio.exe -i ra2.csf -o ra2.llf --to-llf
+CsfStudio.exe -i stringtable01.csf -o stringtable01.llf --to-llf
 
 # Convert LLF to INI
-CsfStudio.exe -i ra2.llf -o ra2.ini --to-ini
+CsfStudio.exe -i stringtable01.llf -o stringtable01.ini --to-ini
 
 # Merge two files
-CsfStudio.exe -i file1.llf,file2.json -o merged.yaml --merge
+CsfStudio.exe -i stringtable01.llf,stringtable02.json -o stringtable03.yaml --merge
 
 # Subtract labels
-CsfStudio.exe -i main.llf,remove.llf -o result.llf --subtract  
+CsfStudio.exe -i stringtable01.llf,stringtable02.llf -o stringtable03.llf --subtract  
+
+#Fix Encoding
+CsfStudio.exe -i stringtable01.csf -o stringtable02.csf --fix-encoding windows-1251
+
 ```
 ## Format Comparison Matrix
 
-| Feature                 | CSF    | INI    | JSON   | YAML   | LLF    |
-|-------------------------|--------|--------|--------|--------|--------|
-| **Human-readable** | ❌     | ✅     | 🟡     | ✅     | ✅     |
-| **Metadata support**| ✅     | ✅     | ✅     | ✅     | ✅     |
-| **Multi-line values** | ✅  | ✅     | ✅     | ✅     | ✅     |
-| **Language support**| ✅     | ✅     | ✅     | ✅     | ✅     |
-| **Version support** | ✅     | ✅     | ✅     | ✅     | ✅     |
-| **Edit complexity** | High   | Medium | Low    | Low    | Low    |
-| **File size**       | Small  | Medium | Large  | Medium | Medium |
-| **Best use case**   | Game   | Tools  | APIs   | Config | Editing|
+| Feature               | CSF    | INI  | JSON | YAML   | LLF  |
+|-----------------------|--------|------|----|--------|------|
+| **Human-readable**    | ❌     | ✅    | 🟡 | ✅      | ✅    |
+| **Metadata support**  | ✅     | ✅    | ✅  | ✅      | ✅    |
+| **Multi-line values** | ✅     | ✅    | ✅  | ✅      | ✅    |
+| **Language support**  | ✅     | ✅    | ✅  | ✅      | ✅    |
+| **Version support**   | ✅     | ✅    | ✅  | ✅      | ✅    |
+| **Edit complexity**   | High   | Medium | Low | Low    | Low  |
+| **File size**         | Small  | Medium | Large | Medium | Medium |
+| **Best use case**     | Game   | Tools | APIs | Config | Editing |
 
 ## Technical Specifications
 

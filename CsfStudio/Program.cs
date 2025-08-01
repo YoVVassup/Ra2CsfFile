@@ -1,13 +1,22 @@
 ﻿using SadPencil.Ra2CsfFile;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
+using System.Text;
 
 namespace CsfStudio
 {
+    /// <summary>
+    /// Main application class for CSF/INI conversion tool
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// Application entry point
+        /// </summary>
+        /// <param name="args">Command line arguments</param>
+        /// <returns>Exit code (0 for success)</returns>
         static int Main(string[] args)
         {
             try
@@ -19,6 +28,7 @@ namespace CsfStudio
                     return 0;
                 }
 
+                // Process based on operation type
                 if (options.Merge)
                 {
                     ProcessFiles(options.InputFiles, options.OutputFile, MergeOperation);
@@ -56,9 +66,13 @@ namespace CsfStudio
                     else
                         ConvertLlfToCsf(options.InputFiles[0], options.OutputFile);
                 }
+                else if (!string.IsNullOrEmpty(options.FixEncoding))
+                {
+                    FixEncoding(options.InputFiles[0], options.OutputFile, options.GetEncoding());
+                }
                 else
                 {
-                    Console.WriteLine("Error: You must specify an operation (--to-ini, --to-csf, --to-json, --to-yaml, --to-llf, --merge or --subtract)");
+                    Console.WriteLine("Error: You must specify an operation (--to-ini, --to-csf, --to-json, --to-yaml, --to-llf, --merge, --subtract or --fix-encoding)");
                     return 1;
                 }
 
@@ -72,6 +86,78 @@ namespace CsfStudio
             }
         }
 
+        /// <summary>
+        /// Fixes text encoding in the input file
+        /// </summary>
+        /// <param name="inputPath">Path to input file</param>
+        /// <param name="outputPath">Path to output file</param>
+        /// <param name="sourceEncoding">Source encoding to convert from</param>
+        private static void FixEncoding(string inputPath, string outputPath, Encoding sourceEncoding)
+        {
+            var ext = Path.GetExtension(inputPath).ToLower();
+            if (ext == ".csf")
+            {
+                using (var inputStream = File.OpenRead(inputPath))
+                using (var outputStream = File.Create(outputPath))
+                {
+                    var csfFile = CsfFile.LoadFromCsfFile(inputStream);
+                    FixCsfEncoding(csfFile, sourceEncoding);
+                    csfFile.WriteCsfFile(outputStream);
+                }
+            }
+            else if (ext == ".ini")
+            {
+                using (var inputStream = File.OpenRead(inputPath))
+                using (var outputStream = File.Create(outputPath))
+                {
+                    var csfFile = CsfFileIniHelper.LoadFromIniFile(inputStream);
+                    FixCsfEncoding(csfFile, sourceEncoding);
+                    CsfFileIniHelper.WriteIniFile(csfFile, outputStream);
+                }
+            }
+            else
+            {
+                throw new NotSupportedException("Unsupported file type for encoding fix");
+            }
+        }
+
+        /// <summary>
+        /// Corrects encoding for all labels in a CSF file
+        /// </summary>
+        /// <param name="csfFile">CSF file object</param>
+        /// <param name="sourceEncoding">Source encoding to convert from</param>
+        private static void FixCsfEncoding(CsfFile csfFile, Encoding sourceEncoding)
+        {
+            foreach (var label in csfFile.Labels.ToList())
+            {
+                try 
+                {
+                    // 1. Get current bytes (incorrect interpretation)
+                    byte[] unicodeBytes = Encoding.Unicode.GetBytes(label.Value);
+            
+                    // 2. Convert to single-byte representation
+                    byte[] sourceBytes = new byte[unicodeBytes.Length / 2];
+                    for (int i = 0; i < sourceBytes.Length; i++)
+                    {
+                        sourceBytes[i] = unicodeBytes[i * 2]; // Lower bytes
+                    }
+            
+                    // 3. Decode from source encoding
+                    string fixedValue = sourceEncoding.GetString(sourceBytes);
+            
+                    // 4. Update the label
+                    csfFile.AddLabel(label.Key, fixedValue);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error fixing label {label.Key}: {ex.Message}");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Processes multiple files with the specified operation
+        /// </summary>
         private static void ProcessFiles(List<string> inputPaths, string outputPath, Func<List<CsfFile>, CsfFile> operation)
         {
             var firstExt = Path.GetExtension(inputPaths.First()).ToLower();
@@ -145,6 +231,9 @@ namespace CsfStudio
             }
         }
 
+        /// <summary>
+        /// Merges multiple CSF files into one
+        /// </summary>
         private static CsfFile MergeOperation(List<CsfFile> files)
         {
             var result = new CsfFile();
@@ -164,6 +253,9 @@ namespace CsfStudio
             return result;
         }
 
+        /// <summary>
+        /// Subtracts labels present in other files
+        /// </summary>
         private static CsfFile SubtractOperation(List<CsfFile> files)
         {
             if (files.Count < 2)
@@ -171,7 +263,8 @@ namespace CsfStudio
 
             var result = new CsfFile(files[0]);
             var labelsToRemove = new HashSet<string>();
-            
+
+            // Collect all labels from other files to remove
             for (int i = 1; i < files.Count; i++)
             {
                 foreach (var label in files[i].Labels.Keys)
@@ -180,6 +273,7 @@ namespace CsfStudio
                 }
             }
 
+            // Remove labels that exist in other files
             foreach (var label in labelsToRemove)
             {
                 result.RemoveLabel(label);
@@ -269,6 +363,9 @@ namespace CsfStudio
             }
         }
 
+        /// <summary>
+        /// Displays help information
+        /// </summary>
         private static void ShowHelp()
         {
             Console.WriteLine("CsfStudio - CSF/INI/JSON/YAML/LLF converter for Red Alert 2");
@@ -280,18 +377,30 @@ namespace CsfStudio
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o merged.ext --merge");
             Console.WriteLine("  Subtract files (remove labels present in other files):");
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o result.ext --subtract");
+            Console.WriteLine("  Fix encoding:");
+            Console.WriteLine("    CsfStudio.exe -i input.ext -o output.ext --fix-encoding ENCODING");
             Console.WriteLine();
             Console.WriteLine("Options:");
-            Console.WriteLine("  -i, --input    Input file path(s), comma-separated");
-            Console.WriteLine("  -o, --output   Output file path");
-            Console.WriteLine("  --to-ini       Convert to INI format");
-            Console.WriteLine("  --to-csf       Convert to CSF format");
-            Console.WriteLine("  --to-json      Convert to JSON format");
-            Console.WriteLine("  --to-yaml      Convert to YAML format");
-            Console.WriteLine("  --to-llf       Convert to LLF format");
-            Console.WriteLine("  --merge        Merge multiple files");
-            Console.WriteLine("  --subtract     Subtract labels present in other files");
-            Console.WriteLine("  -h, --help     Show this help message");
+            Console.WriteLine("  -i, --input        Input file path(s), comma-separated");
+            Console.WriteLine("  -o, --output       Output file path");
+            Console.WriteLine("  --to-ini           Convert to INI format");
+            Console.WriteLine("  --to-csf           Convert to CSF format");
+            Console.WriteLine("  --to-json          Convert to JSON format");
+            Console.WriteLine("  --to-yaml          Convert to YAML format");
+            Console.WriteLine("  --to-llf           Convert to LLF format");
+            Console.WriteLine("  --merge            Merge multiple files");
+            Console.WriteLine("  --subtract         Subtract labels present in other files");
+            Console.WriteLine("  --fix-encoding     Fix text encoding (specify source encoding)");
+            Console.WriteLine("  -h, --help         Show this help message");
+            Console.WriteLine();
+            Console.WriteLine("Supported encodings for --fix-encoding:");
+            Console.WriteLine("  gb18030      - Chinese (GB18030 standard)");
+            Console.WriteLine("  gb2312       - Chinese simplified (compatibility)");
+            Console.WriteLine("  windows-1251 - Cyrillic");
+            Console.WriteLine("  windows-1252 - Western European");
+            Console.WriteLine("  iso-8859-1   - Latin-1");
+            Console.WriteLine("  utf-8        - Unicode UTF-8");
+            Console.WriteLine("  unicode      - Unicode UTF-16");
         }
     }
 }
