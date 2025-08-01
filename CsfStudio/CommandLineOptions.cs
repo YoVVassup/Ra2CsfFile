@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace CsfStudio
 {
@@ -12,6 +11,7 @@ namespace CsfStudio
         public bool ToJson { get; set; }
         public bool ToYaml { get; set; }
         public bool ToCsf { get; set; }
+        public bool ToLlf { get; set; }
         public bool Merge { get; set; }
         public bool Subtract { get; set; }
         public bool ShowHelp { get; set; }
@@ -53,6 +53,10 @@ namespace CsfStudio
 
                     case "--to-csf":
                         options.ToCsf = true;
+                        break;
+                        
+                    case "--to-llf":
+                        options.ToLlf = true;
                         break;
 
                     case "--merge":

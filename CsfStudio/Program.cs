@@ -1,8 +1,8 @@
 ﻿using SadPencil.Ra2CsfFile;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 
 namespace CsfStudio
 {
@@ -49,9 +49,16 @@ namespace CsfStudio
                     else
                         ConvertYamlToCsf(options.InputFiles[0], options.OutputFile);
                 }
+                else if (options.ToLlf)
+                {
+                    if (Path.GetExtension(options.InputFiles[0]).Equals(".csf", StringComparison.OrdinalIgnoreCase))
+                        ConvertCsfToLlf(options.InputFiles[0], options.OutputFile);
+                    else
+                        ConvertLlfToCsf(options.InputFiles[0], options.OutputFile);
+                }
                 else
                 {
-                    Console.WriteLine("Error: You must specify an operation (--to-ini, --to-csf, --to-json, --to-yaml, --merge or --subtract)");
+                    Console.WriteLine("Error: You must specify an operation (--to-ini, --to-csf, --to-json, --to-yaml, --to-llf, --merge or --subtract)");
                     return 1;
                 }
 
@@ -94,6 +101,10 @@ namespace CsfStudio
                     {
                         files.Add(CsfFileYamlHelper.LoadFromYamlFile(inputStream));
                     }
+                    else if (firstExt == ".llf")
+                    {
+                        files.Add(CsfFile.LoadFromLlfFile(inputStream));
+                    }
                     else
                     {
                         throw new InvalidOperationException($"Unsupported file format: {firstExt}");
@@ -121,6 +132,11 @@ namespace CsfStudio
                 else if (outputExt == ".yaml" || outputExt == ".yml")
                 {
                     CsfFileYamlHelper.WriteYamlFile(result, outputStream);
+                }
+                else if (outputExt == ".llf")
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                    result.WriteLlfFile(outputStream, fileName);
                 }
                 else
                 {
@@ -155,8 +171,7 @@ namespace CsfStudio
 
             var result = new CsfFile(files[0]);
             var labelsToRemove = new HashSet<string>();
-
-            // Собираем все метки из последующих файлов для удаления
+            
             for (int i = 1; i < files.Count; i++)
             {
                 foreach (var label in files[i].Labels.Keys)
@@ -165,7 +180,6 @@ namespace CsfStudio
                 }
             }
 
-            // Удаляем метки, которые есть в других файлах
             foreach (var label in labelsToRemove)
             {
                 result.RemoveLabel(label);
@@ -234,13 +248,34 @@ namespace CsfStudio
             }
         }
 
+        private static void ConvertCsfToLlf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromCsfFile(inputStream);
+                string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                csfFile.WriteLlfFile(outputStream, fileName);
+            }
+        }
+
+        private static void ConvertLlfToCsf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromLlfFile(inputStream);
+                csfFile.WriteCsfFile(outputStream);
+            }
+        }
+
         private static void ShowHelp()
         {
-            Console.WriteLine("CsfStudio - CSF/INI/JSON/YAML converter for Red Alert 2");
+            Console.WriteLine("CsfStudio - CSF/INI/JSON/YAML/LLF converter for Red Alert 2");
             Console.WriteLine("Usage:");
             Console.WriteLine("  Convert between formats:");
             Console.WriteLine("    CsfStudio.exe -i input.ext -o output.ext --to-[format]");
-            Console.WriteLine("      Supported formats: ini, csf, json, yaml");
+            Console.WriteLine("      Supported formats: ini, csf, json, yaml, llf");
             Console.WriteLine("  Merge files:");
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o merged.ext --merge");
             Console.WriteLine("  Subtract files (remove labels present in other files):");
@@ -253,6 +288,7 @@ namespace CsfStudio
             Console.WriteLine("  --to-csf       Convert to CSF format");
             Console.WriteLine("  --to-json      Convert to JSON format");
             Console.WriteLine("  --to-yaml      Convert to YAML format");
+            Console.WriteLine("  --to-llf       Convert to LLF format");
             Console.WriteLine("  --merge        Merge multiple files");
             Console.WriteLine("  --subtract     Subtract labels present in other files");
             Console.WriteLine("  -h, --help     Show this help message");
