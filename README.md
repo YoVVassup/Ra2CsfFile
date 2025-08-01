@@ -1,7 +1,7 @@
 # SadPencil.Ra2CsfFile
 
 ## .NET Library
-This is a .Net Framework v4.0 Library to load, edit, and save string table files (.csf) for Red Alert 2. Also, (de)serialize the string table from/to .ini, .json and .yaml (.yml) files.
+This is a .Net Framework v4.0 Library to load, edit, and save string table files (.csf) for Red Alert 2. Also, (de)serialize the string table from/to .ini, .json, .llf and .yaml (.yml) files.
 
 ## License
 
@@ -14,6 +14,7 @@ Easy to get .Net Target Framework SDK: Run [Get_.NET_Target_Framework.ps1](https
 ## Version History
 
 ```
+v2.2.1: added LLF serialization support
 v2.2.0: added JSON and YAML serialization support
 v2.1.3: downgrade to compatibility .NET Framework 4.0
 v2.1.2: disable Encoding1252WriteWorkaround by default; add CLSCompliant attribute to namespace SadPencil.Ra2CsfFile

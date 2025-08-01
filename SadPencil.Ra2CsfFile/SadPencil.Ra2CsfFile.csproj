@@ -58,6 +58,7 @@
         <Compile Include="CsfFile.cs" />
         <Compile Include="CsfFileIniHelper.cs" />
         <Compile Include="CsfFileJsonHelper.cs" />
+        <Compile Include="CsfFileLlfHelper.cs" />
         <Compile Include="CsfFileOptions.cs" />
         <Compile Include="CsfFileYamlHelper.cs" />
         <Compile Include="CsfLang.cs" />

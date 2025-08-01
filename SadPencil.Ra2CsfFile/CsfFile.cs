@@ -359,7 +359,27 @@ namespace SadPencil.Ra2CsfFile
         public void WriteYamlFile(Stream stream) => 
             CsfFileYamlHelper.WriteYamlFile(this, stream);
         #endregion
+        
+        #region LLF File Operations
+        /// <summary>
+        /// Load a CSF file from an LLF representation.
+        /// </summary>
+        public static CsfFile LoadFromLlfFile(Stream stream) => 
+            CsfFileLlfHelper.LoadFromLlfFile(stream, new CsfFileOptions());
 
+        /// <summary>
+        /// Load a CSF file from an LLF representation with options.
+        /// </summary>
+        public static CsfFile LoadFromLlfFile(Stream stream, CsfFileOptions options) => 
+            CsfFileLlfHelper.LoadFromLlfFile(stream, options);
+
+        /// <summary>
+        /// Save the CSF file to an LLF representation.
+        /// </summary>
+        public void WriteLlfFile(Stream stream, string fileName = "converted") => 
+            CsfFileLlfHelper.WriteLlfFile(this, stream, fileName);
+        #endregion
+        
         #region Helper Methods
         /// <summary>
         /// Check whether the name of a label is valid.
