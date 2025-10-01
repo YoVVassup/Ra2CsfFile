@@ -39,32 +39,73 @@ namespace CsfStudio
                 }
                 else if (options.ToIni)
                 {
-                    ConvertCsfToIni(options.InputFiles[0], options.OutputFile);
+                    var inputExt = Path.GetExtension(options.InputFiles[0]).ToLower();
+                    if (inputExt == ".csf")
+                        ConvertCsfToIni(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".json")
+                        ConvertJsonToIni(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".yaml" || inputExt == ".yml")
+                        ConvertYamlToIni(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".llf")
+                        ConvertLlfToIni(options.InputFiles[0], options.OutputFile);
+                    else
+                        throw new NotSupportedException($"Unsupported input format for INI conversion: {inputExt}");
                 }
                 else if (options.ToCsf)
                 {
-                    ConvertIniToCsf(options.InputFiles[0], options.OutputFile);
+                    var inputExt = Path.GetExtension(options.InputFiles[0]).ToLower();
+                    if (inputExt == ".ini")
+                        ConvertIniToCsf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".json")
+                        ConvertJsonToCsf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".yaml" || inputExt == ".yml")
+                        ConvertYamlToCsf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".llf")
+                        ConvertLlfToCsf(options.InputFiles[0], options.OutputFile);
+                    else
+                        throw new NotSupportedException($"Unsupported input format for CSF conversion: {inputExt}");
                 }
                 else if (options.ToJson)
                 {
-                    if (Path.GetExtension(options.InputFiles[0]).Equals(".csf", StringComparison.OrdinalIgnoreCase))
+                    var inputExt = Path.GetExtension(options.InputFiles[0]).ToLower();
+                    if (inputExt == ".csf")
                         ConvertCsfToJson(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".ini")
+                        ConvertIniToJson(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".yaml" || inputExt == ".yml")
+                        ConvertYamlToJson(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".llf")
+                        ConvertLlfToJson(options.InputFiles[0], options.OutputFile);
                     else
-                        ConvertJsonToCsf(options.InputFiles[0], options.OutputFile);
+                        throw new NotSupportedException($"Unsupported input format for JSON conversion: {inputExt}");
                 }
                 else if (options.ToYaml)
                 {
-                    if (Path.GetExtension(options.InputFiles[0]).Equals(".csf", StringComparison.OrdinalIgnoreCase))
+                    var inputExt = Path.GetExtension(options.InputFiles[0]).ToLower();
+                    if (inputExt == ".csf")
                         ConvertCsfToYaml(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".ini")
+                        ConvertIniToYaml(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".json")
+                        ConvertJsonToYaml(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".llf")
+                        ConvertLlfToYaml(options.InputFiles[0], options.OutputFile);
                     else
-                        ConvertYamlToCsf(options.InputFiles[0], options.OutputFile);
+                        throw new NotSupportedException($"Unsupported input format for YAML conversion: {inputExt}");
                 }
                 else if (options.ToLlf)
                 {
-                    if (Path.GetExtension(options.InputFiles[0]).Equals(".csf", StringComparison.OrdinalIgnoreCase))
+                    var inputExt = Path.GetExtension(options.InputFiles[0]).ToLower();
+                    if (inputExt == ".csf")
                         ConvertCsfToLlf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".ini")
+                        ConvertIniToLlf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".json")
+                        ConvertJsonToLlf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".yaml" || inputExt == ".yml")
+                        ConvertYamlToLlf(options.InputFiles[0], options.OutputFile);
                     else
-                        ConvertLlfToCsf(options.InputFiles[0], options.OutputFile);
+                        throw new NotSupportedException($"Unsupported input format for LLF conversion: {inputExt}");
                 }
                 else if (!string.IsNullOrEmpty(options.FixEncoding))
                 {
@@ -362,6 +403,129 @@ namespace CsfStudio
                 csfFile.WriteCsfFile(outputStream);
             }
         }
+        
+        private static void ConvertJsonToIni(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileJsonHelper.LoadFromJsonFile(inputStream);
+                CsfFileIniHelper.WriteIniFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertYamlToIni(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileYamlHelper.LoadFromYamlFile(inputStream);
+                CsfFileIniHelper.WriteIniFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertLlfToIni(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromLlfFile(inputStream);
+                CsfFileIniHelper.WriteIniFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertIniToJson(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileIniHelper.LoadFromIniFile(inputStream);
+                CsfFileJsonHelper.WriteJsonFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertYamlToJson(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileYamlHelper.LoadFromYamlFile(inputStream);
+                CsfFileJsonHelper.WriteJsonFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertLlfToJson(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromLlfFile(inputStream);
+                CsfFileJsonHelper.WriteJsonFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertIniToYaml(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileIniHelper.LoadFromIniFile(inputStream);
+                CsfFileYamlHelper.WriteYamlFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertJsonToYaml(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileJsonHelper.LoadFromJsonFile(inputStream);
+                CsfFileYamlHelper.WriteYamlFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertLlfToYaml(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromLlfFile(inputStream);
+                CsfFileYamlHelper.WriteYamlFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertIniToLlf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileIniHelper.LoadFromIniFile(inputStream);
+                string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                csfFile.WriteLlfFile(outputStream, fileName);
+            }
+        }
+
+        private static void ConvertJsonToLlf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileJsonHelper.LoadFromJsonFile(inputStream);
+                string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                csfFile.WriteLlfFile(outputStream, fileName);
+            }
+        }
+
+        private static void ConvertYamlToLlf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileYamlHelper.LoadFromYamlFile(inputStream);
+                string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                csfFile.WriteLlfFile(outputStream, fileName);
+            }
+        }        
 
         /// <summary>
         /// Displays help information

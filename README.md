@@ -64,7 +64,7 @@ ValueLine2 = Additional line
   "language": 0,  
   "labels": {  
     "LABEL1": "Value 1",  
-    "LABEL2": "Multi-linenvalue"  
+    "LABEL2": "Multi-line\nvalue"  
   }  
 }  
 ```
@@ -88,9 +88,9 @@ labels:
 - **Type**: Human-readable editing format  
 - **Structure**:  
 ```
-# Filename
-#Version: 3  
-#Language: 0  
+#filename
+#version: 3  
+#language: 0  
 #csf count: 42  
 #build time: 2025-08-01 14:30:00
 
