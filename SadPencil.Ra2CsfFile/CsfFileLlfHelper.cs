@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace SadPencil.Ra2CsfFile
 {
@@ -10,6 +11,73 @@ namespace SadPencil.Ra2CsfFile
     /// </summary>
     public static class CsfFileLlfHelper
     {
+        /// <summary>
+        /// Converts label name to valid CSF format (lowercase ASCII, no special characters)
+        /// </summary>
+        private static string ConvertToValidLabelName(string labelName)
+        {
+            if (string.IsNullOrEmpty(labelName))
+                return labelName;
+
+            // Convert to lowercase
+            labelName = labelName.ToLowerInvariant();
+
+            // Remove or replace invalid characters - only allow letters, numbers, underscore, hyphen, colon
+            var validChars = labelName
+                .Where(c => (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-' || c == ':')
+                .ToArray();
+
+            if (validChars.Length == 0)
+            {
+                // If no valid characters, create a default name
+                return "invalid_label";
+            }
+
+            return new string(validChars);
+        }
+
+        /// <summary>
+        /// Parses a line to extract full key (including section) and value
+        /// </summary>
+        private static bool TryParseLine(string line, out string fullKey, out string value, out bool isMultiLine)
+        {
+            fullKey = null;
+            value = null;
+            isMultiLine = false;
+
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
+                return false;
+
+            // Find the first colon (separates section from key)
+            int firstColonIndex = line.IndexOf(':');
+            if (firstColonIndex < 0)
+                return false;
+
+            // Find the second colon (separates key from value)
+            int secondColonIndex = line.IndexOf(':', firstColonIndex + 1);
+            if (secondColonIndex < 0)
+            {
+                // If only one colon, treat entire prefix as key
+                fullKey = line.Substring(0, firstColonIndex).Trim();
+                value = line.Substring(firstColonIndex + 1).Trim();
+            }
+            else
+            {
+                // Extract section:key as fullKey (everything before second colon)
+                fullKey = line.Substring(0, secondColonIndex).Trim();
+                value = line.Substring(secondColonIndex + 1).Trim();
+            }
+
+            // Check for multi-line value indicator
+            if (value.StartsWith(">-"))
+            {
+                isMultiLine = true;
+                value = ""; // Value will be built from subsequent lines
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Loads a CSF file from an LLF representation.
         /// </summary>
@@ -37,13 +105,20 @@ namespace SadPencil.Ra2CsfFile
                 while ((line = sr.ReadLine()) != null)
                 {
                     if (string.IsNullOrWhiteSpace(line))
+                    {
+                        if (inMultiLine && currentValue != null)
+                        {
+                            // Add empty line to multi-line value
+                            currentValue.AppendLine();
+                        }
                         continue;
+                    }
                     
                     // Process metadata comments
                     if (line.StartsWith("#"))
                     {
                         // Extract version
-                        var versionMatch = Regex.Match(line, @"#Version:\s*(\d+)");
+                        var versionMatch = Regex.Match(line, @"# csf version:\s*(\d+)");
                         if (versionMatch.Success)
                         {
                             csf.Version = int.Parse(versionMatch.Groups[1].Value);
@@ -51,62 +126,116 @@ namespace SadPencil.Ra2CsfFile
                         }
                         
                         // Extract language
-                        var langMatch = Regex.Match(line, @"#Language:\s*(\d+)");
+                        var langMatch = Regex.Match(line, @"# language:\s*(\d+)");
                         if (langMatch.Success)
                         {
                             int langValue = int.Parse(langMatch.Groups[1].Value);
                             csf.Language = CsfLangHelper.GetCsfLang(langValue);
-                            continue;
                         }
                         
                         // Skip other comments
                         continue;
                     }
-                    
-                    // Parse key-value pairs
-                    int colonIndex = line.IndexOf(':');
-                    if (colonIndex >= 0)
+
+                    // If we're in multi-line mode and the line is indented, it's a continuation
+                    if (inMultiLine && currentValue != null)
                     {
-                        // Finalize previous entry if exists
-                        if (currentKey != null)
+                        if (line.StartsWith("  "))
                         {
-                            csf.AddLabel(currentKey, currentValue.ToString());
+                            // Continuation line with indentation
+                            currentValue.AppendLine(line.Substring(2).TrimEnd());
                         }
+                        else if (string.IsNullOrWhiteSpace(line))
+                        {
+                            // Empty line in multi-line value
+                            currentValue.AppendLine();
+                        }
+                        else
+                        {
+                            // End of multi-line value - save current entry and start new one
+                            string validCurrentKey = ConvertToValidLabelName(currentKey);
+                            if (!string.IsNullOrEmpty(validCurrentKey))
+                            {
+                                csf.AddLabel(validCurrentKey, currentValue.ToString().Trim());
+                            }
+                            
+                            // Parse the new line
+                            inMultiLine = false;
+                            currentKey = null;
+                            currentValue = null;
+                            
+                            // Process the current line
+                            if (TryParseLine(line, out string newKey, out string newValue, out bool newIsMultiLine))
+                            {
+                                currentKey = newKey;
+                                if (newIsMultiLine)
+                                {
+                                    inMultiLine = true;
+                                    currentValue = new StringBuilder();
+                                }
+                                else
+                                {
+                                    currentValue = new StringBuilder(newValue);
+                                    // Add the entry immediately for single-line values
+                                    string validNewKey = ConvertToValidLabelName(currentKey);
+                                    if (!string.IsNullOrEmpty(validNewKey))
+                                    {
+                                        csf.AddLabel(validNewKey, currentValue.ToString());
+                                    }
+                                    currentKey = null;
+                                    currentValue = null;
+                                }
+                            }
+                        }
+                        continue;
+                    }
 
-                        currentKey = line.Substring(0, colonIndex).Trim();
-                        string valuePart = line.Substring(colonIndex + 1).Trim();
+                    // Finalize previous entry if exists
+                    if (currentKey != null && currentValue != null)
+                    {
+                        string validCurrentKey = ConvertToValidLabelName(currentKey);
+                        if (!string.IsNullOrEmpty(validCurrentKey))
+                        {
+                            csf.AddLabel(validCurrentKey, currentValue.ToString().Trim());
+                        }
+                        currentKey = null;
+                        currentValue = null;
+                        inMultiLine = false;
+                    }
 
-                        // Check for multi-line value indicator
-                        if (valuePart.StartsWith(">-"))
+                    // Parse new line
+                    if (TryParseLine(line, out string fullKey, out string value, out bool isMultiLine))
+                    {
+                        currentKey = fullKey;
+                        
+                        if (isMultiLine)
                         {
                             inMultiLine = true;
                             currentValue = new StringBuilder();
                         }
                         else
                         {
-                            // Single-line value
-                            csf.AddLabel(currentKey, valuePart);
+                            currentValue = new StringBuilder(value);
+                            // Add the entry immediately for single-line values
+                            string validCurrentKey = ConvertToValidLabelName(currentKey);
+                            if (!string.IsNullOrEmpty(validCurrentKey))
+                            {
+                                csf.AddLabel(validCurrentKey, currentValue.ToString());
+                            }
                             currentKey = null;
+                            currentValue = null;
                         }
-                    }
-                    else if (inMultiLine && line.StartsWith("  "))
-                    {
-                        // Continuation of multi-line value
-                        currentValue.AppendLine(line.Substring(2).TrimEnd());
-                    }
-                    else if (inMultiLine)
-                    {
-                        // End of multi-line value
-                        csf.AddLabel(currentKey, currentValue.ToString());
-                        currentKey = null;
-                        inMultiLine = false;
                     }
                 }
                 
                 // Add last entry if exists
-                if (currentKey != null)
+                if (currentKey != null && currentValue != null)
                 {
-                    csf.AddLabel(currentKey, currentValue.ToString());
+                    string validCurrentKey = ConvertToValidLabelName(currentKey);
+                    if (!string.IsNullOrEmpty(validCurrentKey))
+                    {
+                        csf.AddLabel(validCurrentKey, currentValue.ToString().Trim());
+                    }
                 }
             }
 
@@ -129,12 +258,12 @@ namespace SadPencil.Ra2CsfFile
             {
                 // Write metadata header
                 sw.WriteLine($"# {fileName}");
-                sw.WriteLine($"#Version: {csf.Version}");
-                sw.WriteLine($"#Language: {(int)csf.Language}");
-                sw.WriteLine($"#csf count: {csf.Labels.Count}");
-                sw.WriteLine($"#build time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
+                sw.WriteLine($"# version: {csf.Version}");
+                sw.WriteLine($"# language: {(int)csf.Language}");
+                sw.WriteLine($"# csf count: {csf.Labels.Count}");
+                sw.WriteLine($"# build time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
 
-                // Write labels
+                // Write all labels using full key (including section if present)
                 foreach (var label in csf.Labels)
                 {
                     if (label.Value.Contains("\n"))
