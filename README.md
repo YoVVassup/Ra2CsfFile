@@ -75,7 +75,8 @@ ValueLine2 = Additional line
 - **Structure**:  
 ```yaml  
 version: 3  
-language: 0  
+language: 0 
+version_yaml: 1.2 
 labels:  
   LABEL1: Value 1  
   LABEL2: |  
@@ -88,11 +89,11 @@ labels:
 - **Type**: Human-readable editing format  
 - **Structure**:  
 ```
-#filename
-#version: 3  
-#language: 0  
-#csf count: 42  
-#build time: 2025-08-01 14:30:00
+# filename
+# version: 3  
+# language: 0  
+# csf count: 42  
+# build time: 2025-08-01 14:30:00
 
 KEY_SIMPLE: Simple value  
 KEY_MULTILINE: >-  
@@ -149,15 +150,19 @@ CsfStudio.exe -i stringtable01.csf -o stringtable01.llf --to-llf
 CsfStudio.exe -i stringtable01.llf -o stringtable01.ini --to-ini
 
 # Merge two files
-CsfStudio.exe -i stringtable01.llf,stringtable02.json -o stringtable03.yaml --merge
+CsfStudio.exe -i stringtable01.json,stringtable02.json -o stringtable03.json --merge
 
 # Subtract labels
 CsfStudio.exe -i stringtable01.llf,stringtable02.llf -o stringtable03.llf --subtract  
 
-#Fix Encoding
+# Fix Encoding
 CsfStudio.exe -i stringtable01.csf -o stringtable02.csf --fix-encoding windows-1251
 
 ```
+### Attention
+
+Operations of `--merge`, `--subtract` and `--fix-encoding` only work within the same format! (`.ext`)
+ 
 ## Format Comparison Matrix
 
 | Feature               | CSF    | INI  | JSON | YAML   | LLF  |

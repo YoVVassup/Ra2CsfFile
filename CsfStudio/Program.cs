@@ -156,6 +156,37 @@ namespace CsfStudio
                     CsfFileIniHelper.WriteIniFile(csfFile, outputStream);
                 }
             }
+            else if (ext == ".llf")
+            {
+                using (var inputStream = File.OpenRead(inputPath))
+                using (var outputStream = File.Create(outputPath))
+                {
+                    var csfFile = CsfFile.LoadFromLlfFile(inputStream);
+                    FixCsfEncoding(csfFile, sourceEncoding);
+                    string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                    csfFile.WriteLlfFile(outputStream, fileName);
+                }
+            }
+            else if (ext == ".json")
+            {
+                using (var inputStream = File.OpenRead(inputPath))
+                using (var outputStream = File.Create(outputPath))
+                {
+                    var csfFile = CsfFileJsonHelper.LoadFromJsonFile(inputStream);
+                    FixCsfEncoding(csfFile, sourceEncoding);
+                    CsfFileJsonHelper.WriteJsonFile(csfFile, outputStream);
+                }
+            }
+            else if (ext == ".yaml" || ext == ".yml")
+            {
+                using (var inputStream = File.OpenRead(inputPath))
+                using (var outputStream = File.Create(outputPath))
+                {
+                    var csfFile = CsfFileYamlHelper.LoadFromYamlFile(inputStream);
+                    FixCsfEncoding(csfFile, sourceEncoding);
+                    CsfFileYamlHelper.WriteYamlFile(csfFile, outputStream);
+                }
+            }
             else
             {
                 throw new NotSupportedException("Unsupported file type for encoding fix");
@@ -536,13 +567,14 @@ namespace CsfStudio
             Console.WriteLine("Usage:");
             Console.WriteLine("  Convert between formats:");
             Console.WriteLine("    CsfStudio.exe -i input.ext -o output.ext --to-[format]");
-            Console.WriteLine("      Supported formats: ini, csf, json, yaml, llf");
+            Console.WriteLine("      Supported formats: csf, ini, json, yaml, llf");
             Console.WriteLine("  Merge files:");
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o merged.ext --merge");
             Console.WriteLine("  Subtract files (remove labels present in other files):");
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o result.ext --subtract");
             Console.WriteLine("  Fix encoding:");
             Console.WriteLine("    CsfStudio.exe -i input.ext -o output.ext --fix-encoding ENCODING");
+            Console.WriteLine("      Supported file types: csf, ini, json, yaml, llf");
             Console.WriteLine();
             Console.WriteLine("Options:");
             Console.WriteLine("  -i, --input        Input file path(s), comma-separated");
