@@ -380,6 +380,28 @@ namespace SadPencil.Ra2CsfFile
             CsfFileLlfHelper.WriteLlfFile(this, stream, fileName);
         #endregion
         
+        #region TXT File Operations (CSFTool format)
+
+        /// <summary>
+        /// Load a CSF file from a TXT representation in CSFTool format.
+        /// </summary>
+        public static CsfFile LoadFromTxtFile(Stream stream) => 
+            LoadFromTxtFile(stream, new CsfFileOptions());
+
+        /// <summary>
+        /// Load a CSF file from a TXT representation in CSFTool format with options.
+        /// </summary>
+        public static CsfFile LoadFromTxtFile(Stream stream, CsfFileOptions options) => 
+            CsfFileTxtHelper.LoadFromTxtFile(stream, options);
+
+        /// <summary>
+        /// Save the CSF file to a TXT representation in CSFTool format.
+        /// </summary>
+        public void WriteTxtFile(Stream stream) => 
+            CsfFileTxtHelper.WriteTxtFile(this, stream);
+
+        #endregion
+        
         #region Helper Methods
         /// <summary>
         /// Check whether the name of a label is valid.
