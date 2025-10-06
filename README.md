@@ -1,6 +1,5 @@
 # CsfStudio - Red Alert 2 String Table Editor
 
-<<<<<<< HEAD
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -102,6 +101,15 @@ KEY_MULTILINE: >-
     value  
 ```
 
+### TXT Format
+- **Extension:** `.txt`
+- **Type**: Simple text format (compatible with CSFTool)
+
+```
+KEY_SIMPLE|Simple value
+KEY_MULTILINE|Multi-line\nvalue 
+```
+
 ## Encoding Fix Feature
 
 Fix incorrectly interpreted text encoding with `--fix-encoding`:
@@ -137,6 +145,7 @@ CsfStudio.exe -i file1.ext,file2.ext -o result.ext --operation
 | `--to-json`       | Convert to JSON format           |  
 | `--to-yaml`       | Convert to YAML format           |  
 | `--to-llf`        | Convert to LLF format            |  
+| `--to-txt`        | Convert to TXT format            | 
 | `--merge`         | Merge multiple files             |  
 | `--subtract`      | Subtract labels from other files |  
 | `--fix-encoding`  | Fix text encoding                |  
@@ -166,16 +175,16 @@ Operations of `--merge`, `--subtract` and `--fix-encoding` only work within the 
  
 ## Format Comparison Matrix
 
-| Feature               | CSF    | INI  | JSON | YAML   | LLF  |
-|-----------------------|--------|------|----|--------|------|
-| **Human-readable**    | ❌     | ✅    | 🟡 | ✅      | ✅    |
-| **Metadata support**  | ✅     | ✅    | ✅  | ✅      | ✅    |
-| **Multi-line values** | ✅     | ✅    | ✅  | ✅      | ✅    |
-| **Language support**  | ✅     | ✅    | ✅  | ✅      | ✅    |
-| **Version support**   | ✅     | ✅    | ✅  | ✅      | ✅    |
-| **Edit complexity**   | High   | Medium | Low | Low    | Low  |
-| **File size**         | Small  | Medium | Large | Medium | Medium |
-| **Best use case**     | Game   | Tools | APIs | Config | Editing |
+| Feature               | CSF    |   INI  | JSON  | YAML   |   LLF  | TXT |
+|-----------------------|--------|--------|-------|--------|--------|------|
+| **Human-readable**    | ❌     | ✅    | 🟡   | ✅     | ✅    | ✅   |
+| **Metadata support**  | ✅     | ✅    | ✅   | ✅     | ✅    | 🟡   |
+| **Multi-line values** | ✅     | ✅    | ✅   | ✅     | ✅    | ✅   |
+| **Language support**  | ✅     | ✅    | ✅   | ✅     | ✅    | 🟡   |
+| **Version support**   | ✅     | ✅    | ✅   | ✅     | ✅    | 🟡   |
+| **Edit complexity**   | High   | Medium | Low   | Low    | Low    | Low   |   
+| **File size**         | Small  | Medium | Large | Medium | Medium | Medium |
+| **Best use case**     | Game   | Tools  | APIs  | Config | Editing | Tools |
 
 ## Technical Specifications
 
@@ -213,28 +222,21 @@ git clone https://github.com/YoVVassup/Ra2CsfFile.git
 2. Open `SadPencil.Ra2CsfFile.sln` in Visual Studio or Rider (JetBrains) 
 3. Restore NuGet packages  
 4. Build solution
-=======
-## .NET Library
-This is a .Net Framework v4.0 Library to load, edit, and save string table files (.csf) for Red Alert 2. Also, (de)serialize the string table from/to .ini, .json, .llf, .txt and .yaml (.yml) files.
->>>>>>> main
 
 ## License
 MIT License - see [LICENSE](https://github.com/YoVVassup/Ra2CsfFile/blob/cli/LICENSE) file for details
 
-<<<<<<< HEAD
 ## Acknowledgments
 - Westwood Studios for creating Command & Conquer: Red Alert 2
 - The modding community for their documentation of the CSF format
 - Contributors to the open-source libraries used in this project
-=======
-MIT
 
 ## Notes
 Reference: https://modenc.renegadeprojects.com/CSF_File_Format  
 Easy to get .Net Target Framework SDK: Run [Get_.NET_Target_Framework.ps1](https://github.com/YoVVassup/Ra2CsfFile/blob/main/Get_.NET_Target_Framework.ps1)  
 TXT File format from [CSFTool](https://github.com/Starkku/CSFTool) is licensed under [GPL Version 3](https://github.com/Starkku/CSFTool/blob/master/LICENSE.txt)
 
-## Version History
+## Version History SadPencil.Ra2CsfFile (DLL)
 
 ```
 v2.2.2: added TXT serialization support
@@ -254,7 +256,6 @@ v1.2.0: api breaking change: CsfFile.Labels will now store only one value for a 
 v1.1.1: add XML documentation; re-release the library with Release configuration.
 v1.1.0: fix a bug where multi-line text will be trimmed mistakenly; invalid chars in label name will now be checked.
 ```
->>>>>>> main
 
 ---
 <b>CsfStudio</b> - Your powerful tool for Red Alert 2 string table manipulation!

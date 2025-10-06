@@ -48,6 +48,8 @@ namespace CsfStudio
                         ConvertYamlToIni(options.InputFiles[0], options.OutputFile);
                     else if (inputExt == ".llf")
                         ConvertLlfToIni(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".txt")
+                        ConvertTxtToIni(options.InputFiles[0], options.OutputFile);
                     else
                         throw new NotSupportedException($"Unsupported input format for INI conversion: {inputExt}");
                 }
@@ -62,6 +64,8 @@ namespace CsfStudio
                         ConvertYamlToCsf(options.InputFiles[0], options.OutputFile);
                     else if (inputExt == ".llf")
                         ConvertLlfToCsf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".txt")
+                        ConvertTxtToCsf(options.InputFiles[0], options.OutputFile);
                     else
                         throw new NotSupportedException($"Unsupported input format for CSF conversion: {inputExt}");
                 }
@@ -76,6 +80,8 @@ namespace CsfStudio
                         ConvertYamlToJson(options.InputFiles[0], options.OutputFile);
                     else if (inputExt == ".llf")
                         ConvertLlfToJson(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".txt")
+                        ConvertTxtToJson(options.InputFiles[0], options.OutputFile);
                     else
                         throw new NotSupportedException($"Unsupported input format for JSON conversion: {inputExt}");
                 }
@@ -90,6 +96,8 @@ namespace CsfStudio
                         ConvertJsonToYaml(options.InputFiles[0], options.OutputFile);
                     else if (inputExt == ".llf")
                         ConvertLlfToYaml(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".txt")
+                        ConvertTxtToYaml(options.InputFiles[0], options.OutputFile);
                     else
                         throw new NotSupportedException($"Unsupported input format for YAML conversion: {inputExt}");
                 }
@@ -104,8 +112,26 @@ namespace CsfStudio
                         ConvertJsonToLlf(options.InputFiles[0], options.OutputFile);
                     else if (inputExt == ".yaml" || inputExt == ".yml")
                         ConvertYamlToLlf(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".txt")
+                        ConvertTxtToLlf(options.InputFiles[0], options.OutputFile);
                     else
                         throw new NotSupportedException($"Unsupported input format for LLF conversion: {inputExt}");
+                }
+                else if (options.ToTxt)
+                {
+                    var inputExt = Path.GetExtension(options.InputFiles[0]).ToLower();
+                    if (inputExt == ".csf")
+                        ConvertCsfToTxt(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".ini")
+                        ConvertIniToTxt(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".json")
+                        ConvertJsonToTxt(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".yaml" || inputExt == ".yml")
+                        ConvertYamlToTxt(options.InputFiles[0], options.OutputFile);
+                    else if (inputExt == ".llf")
+                        ConvertLlfToTxt(options.InputFiles[0], options.OutputFile);
+                    else
+                        throw new NotSupportedException($"Unsupported input format for TXT conversion: {inputExt}");
                 }
                 else if (!string.IsNullOrEmpty(options.FixEncoding))
                 {
@@ -113,7 +139,7 @@ namespace CsfStudio
                 }
                 else
                 {
-                    Console.WriteLine("Error: You must specify an operation (--to-ini, --to-csf, --to-json, --to-yaml, --to-llf, --merge, --subtract or --fix-encoding)");
+                    Console.WriteLine("Error: You must specify an operation (--to-ini, --to-csf, --to-json, --to-yaml, --to-llf, --to-txt, --merge, --subtract or --fix-encoding)");
                     return 1;
                 }
 
@@ -185,6 +211,16 @@ namespace CsfStudio
                     var csfFile = CsfFileYamlHelper.LoadFromYamlFile(inputStream);
                     FixCsfEncoding(csfFile, sourceEncoding);
                     CsfFileYamlHelper.WriteYamlFile(csfFile, outputStream);
+                }
+            }
+            else if (ext == ".txt")
+            {
+                using (var inputStream = File.OpenRead(inputPath))
+                using (var outputStream = File.Create(outputPath))
+                {
+                    var csfFile = CsfFile.LoadFromTxtFile(inputStream);
+                    FixCsfEncoding(csfFile, sourceEncoding);
+                    csfFile.WriteTxtFile(outputStream);
                 }
             }
             else
@@ -263,6 +299,10 @@ namespace CsfStudio
                     {
                         files.Add(CsfFile.LoadFromLlfFile(inputStream));
                     }
+                    else if (firstExt == ".txt")
+                    {
+                        files.Add(CsfFile.LoadFromTxtFile(inputStream));
+                    }
                     else
                     {
                         throw new InvalidOperationException($"Unsupported file format: {firstExt}");
@@ -295,6 +335,10 @@ namespace CsfStudio
                 {
                     string fileName = Path.GetFileNameWithoutExtension(outputPath);
                     result.WriteLlfFile(outputStream, fileName);
+                }
+                else if (outputExt == ".txt")
+                {
+                    result.WriteTxtFile(outputStream);
                 }
                 else
                 {
@@ -352,6 +396,107 @@ namespace CsfStudio
             }
 
             return result;
+        }
+
+        private static void ConvertCsfToTxt(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromCsfFile(inputStream);
+                csfFile.WriteTxtFile(outputStream);
+            }
+        }
+
+        private static void ConvertTxtToCsf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromTxtFile(inputStream);
+                csfFile.WriteCsfFile(outputStream);
+            }
+        }
+
+        private static void ConvertIniToTxt(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileIniHelper.LoadFromIniFile(inputStream);
+                csfFile.WriteTxtFile(outputStream);
+            }
+        }
+
+        private static void ConvertTxtToIni(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromTxtFile(inputStream);
+                CsfFileIniHelper.WriteIniFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertJsonToTxt(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileJsonHelper.LoadFromJsonFile(inputStream);
+                csfFile.WriteTxtFile(outputStream);
+            }
+        }
+
+        private static void ConvertTxtToJson(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromTxtFile(inputStream);
+                CsfFileJsonHelper.WriteJsonFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertYamlToTxt(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFileYamlHelper.LoadFromYamlFile(inputStream);
+                csfFile.WriteTxtFile(outputStream);
+            }
+        }
+
+        private static void ConvertTxtToYaml(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromTxtFile(inputStream);
+                CsfFileYamlHelper.WriteYamlFile(csfFile, outputStream);
+            }
+        }
+
+        private static void ConvertLlfToTxt(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromLlfFile(inputStream);
+                csfFile.WriteTxtFile(outputStream);
+            }
+        }
+
+        private static void ConvertTxtToLlf(string inputPath, string outputPath)
+        {
+            using (var inputStream = File.OpenRead(inputPath))
+            using (var outputStream = File.Create(outputPath))
+            {
+                var csfFile = CsfFile.LoadFromTxtFile(inputStream);
+                string fileName = Path.GetFileNameWithoutExtension(outputPath);
+                csfFile.WriteLlfFile(outputStream, fileName);
+            }
         }
 
         private static void ConvertCsfToIni(string inputPath, string outputPath)
@@ -563,18 +708,18 @@ namespace CsfStudio
         /// </summary>
         private static void ShowHelp()
         {
-            Console.WriteLine("CsfStudio - CSF/INI/JSON/YAML/LLF converter for Red Alert 2");
+            Console.WriteLine("CsfStudio - CSF/INI/JSON/YAML/LLF/TXT converter for Red Alert 2");
             Console.WriteLine("Usage:");
             Console.WriteLine("  Convert between formats:");
             Console.WriteLine("    CsfStudio.exe -i input.ext -o output.ext --to-[format]");
-            Console.WriteLine("      Supported formats: csf, ini, json, yaml, llf");
+            Console.WriteLine("      Supported formats: csf, ini, json, yaml, llf, txt");
             Console.WriteLine("  Merge files:");
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o merged.ext --merge");
             Console.WriteLine("  Subtract files (remove labels present in other files):");
             Console.WriteLine("    CsfStudio.exe -i file1.ext,file2.ext -o result.ext --subtract");
             Console.WriteLine("  Fix encoding:");
             Console.WriteLine("    CsfStudio.exe -i input.ext -o output.ext --fix-encoding ENCODING");
-            Console.WriteLine("      Supported file types: csf, ini, json, yaml, llf");
+            Console.WriteLine("      Supported file types: csf, ini, json, yaml, llf, txt");
             Console.WriteLine();
             Console.WriteLine("Options:");
             Console.WriteLine("  -i, --input        Input file path(s), comma-separated");
@@ -584,6 +729,7 @@ namespace CsfStudio
             Console.WriteLine("  --to-json          Convert to JSON format");
             Console.WriteLine("  --to-yaml          Convert to YAML format");
             Console.WriteLine("  --to-llf           Convert to LLF format");
+            Console.WriteLine("  --to-txt           Convert to TXT format");
             Console.WriteLine("  --merge            Merge multiple files");
             Console.WriteLine("  --subtract         Subtract labels present in other files");
             Console.WriteLine("  --fix-encoding     Fix text encoding (specify source encoding)");

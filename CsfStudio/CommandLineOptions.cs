@@ -30,6 +30,9 @@ namespace CsfStudio
         // Flag for LLF conversion
         public bool ToLlf { get; set; }
         
+        // Flag for TXT conversion
+        public bool ToTxt { get; set; }
+        
         // Flag for merge operation
         public bool Merge { get; set; }
         
@@ -88,6 +91,10 @@ namespace CsfStudio
                         
                     case "--to-llf":
                         options.ToLlf = true;
+                        break;
+                        
+                    case "--to-txt":
+                        options.ToTxt = true;
                         break;
 
                     case "--merge":
