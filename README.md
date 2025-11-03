@@ -1,13 +1,16 @@
 # CsfStudio - Red Alert 2 String Table Editor
 
+![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)  
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Github All Releases](https://img.shields.io/github/downloads/YoVVassup/Ra2CsfFile/total.svg)]()
 
 CsfStudio is a powerful command-line tool for working with Red Alert 2 string table files (.csf). It supports conversion between multiple formats, merging of string tables, and subtraction operations.
 
 ## Features
 
-- 🔄 **Bidirectional Conversion**: Convert between CSF, INI, JSON, YAML, and LLF formats  
+- 🔄 **Bidirectional Conversion**: Convert between CSF, INI, JSON, YAML, LLF and TXT formats  
 - 🧩 **Merge Operations**: Combine multiple string tables into one  
 - ✂️ **Subtract Operations**: Remove labels present in other files  
 - 🔠 **Encoding Fix**: Correct text encoding issues in existing files  
@@ -258,4 +261,4 @@ v1.1.0: fix a bug where multi-line text will be trimmed mistakenly; invalid char
 ```
 
 ---
-<b>CsfStudio</b> - Your powerful tool for Red Alert 2 string table manipulation!
+<b>CsfStudio</b> - Your 💪 tool for Red Alert 2 string table manipulation!
