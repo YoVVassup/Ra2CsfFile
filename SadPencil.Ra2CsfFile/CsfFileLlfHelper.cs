@@ -8,6 +8,9 @@ namespace SadPencil.Ra2CsfFile
 {
     /// <summary>
     /// Helper class for working with LLF files representing CSF string tables.
+    /// Supports extra data (WRTS) as a Base64-encoded string or plain text using comment lines.
+    /// Supports metadata via # version: and # language: comments.
+    /// Supports label ordering via CsfFileOptions.OrderByKey.
     /// </summary>
     public static class CsfFileLlfHelper
     {
@@ -29,7 +32,6 @@ namespace SadPencil.Ra2CsfFile
 
             if (validChars.Length == 0)
             {
-                // If no valid characters, create a default name
                 return "invalid_label";
             }
 
@@ -48,31 +50,26 @@ namespace SadPencil.Ra2CsfFile
             if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#"))
                 return false;
 
-            // Find the first colon (separates section from key)
             int firstColonIndex = line.IndexOf(':');
             if (firstColonIndex < 0)
                 return false;
 
-            // Find the second colon (separates key from value)
             int secondColonIndex = line.IndexOf(':', firstColonIndex + 1);
             if (secondColonIndex < 0)
             {
-                // If only one colon, treat entire prefix as key
                 fullKey = line.Substring(0, firstColonIndex).Trim();
                 value = line.Substring(firstColonIndex + 1).Trim();
             }
             else
             {
-                // Extract section:key as fullKey (everything before second colon)
                 fullKey = line.Substring(0, secondColonIndex).Trim();
                 value = line.Substring(secondColonIndex + 1).Trim();
             }
 
-            // Check for multi-line value indicator
             if (value.StartsWith(">-"))
             {
                 isMultiLine = true;
-                value = ""; // Value will be built from subsequent lines
+                value = "";
             }
 
             return true;
@@ -88,10 +85,11 @@ namespace SadPencil.Ra2CsfFile
         /// <exception cref="InvalidDataException">If the file format is incorrect.</exception>
         public static CsfFile LoadFromLlfFile(Stream stream, CsfFileOptions options = null)
         {
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+
             options = options ?? new CsfFileOptions();
             var csf = new CsfFile(options);
             
-            // Default values if not specified in file
             csf.Version = 3;
             csf.Language = CsfLang.EnglishUS;
 
@@ -101,6 +99,7 @@ namespace SadPencil.Ra2CsfFile
                 string currentKey = null;
                 StringBuilder currentValue = null;
                 bool inMultiLine = false;
+                string currentExtra = null;
 
                 while ((line = sr.ReadLine()) != null)
                 {
@@ -108,7 +107,6 @@ namespace SadPencil.Ra2CsfFile
                     {
                         if (inMultiLine && currentValue != null)
                         {
-                            // Add empty line to multi-line value
                             currentValue.AppendLine();
                         }
                         continue;
@@ -117,7 +115,6 @@ namespace SadPencil.Ra2CsfFile
                     // Process metadata comments
                     if (line.StartsWith("#"))
                     {
-                        // Extract version
                         var versionMatch = Regex.Match(line, @"# csf version:\s*(\d+)");
                         if (versionMatch.Success)
                         {
@@ -125,15 +122,20 @@ namespace SadPencil.Ra2CsfFile
                             continue;
                         }
                         
-                        // Extract language
                         var langMatch = Regex.Match(line, @"# language:\s*(\d+)");
                         if (langMatch.Success)
                         {
                             int langValue = int.Parse(langMatch.Groups[1].Value);
                             csf.Language = CsfLangHelper.GetCsfLang(langValue);
+                            continue;
+                        }
+
+                        var extraMatch = Regex.Match(line, @"# extra:\s*(.+)$");
+                        if (extraMatch.Success)
+                        {
+                            currentExtra = extraMatch.Groups[1].Value;
                         }
                         
-                        // Skip other comments
                         continue;
                     }
 
@@ -142,29 +144,34 @@ namespace SadPencil.Ra2CsfFile
                     {
                         if (line.StartsWith("  "))
                         {
-                            // Continuation line with indentation
                             currentValue.AppendLine(line.Substring(2).TrimEnd());
                         }
                         else if (string.IsNullOrWhiteSpace(line))
                         {
-                            // Empty line in multi-line value
                             currentValue.AppendLine();
                         }
                         else
                         {
-                            // End of multi-line value - save current entry and start new one
+                            // End of multi-line value - save current entry
                             string validCurrentKey = ConvertToValidLabelName(currentKey);
                             if (!string.IsNullOrEmpty(validCurrentKey))
                             {
-                                csf.AddLabel(validCurrentKey, currentValue.ToString().Trim());
+                                byte[] extra = null;
+                                if (!string.IsNullOrEmpty(currentExtra))
+                                {
+                                    if (options.TreatExtraAsText)
+                                        extra = Encoding.UTF8.GetBytes(currentExtra);
+                                    else
+                                        extra = Convert.FromBase64String(currentExtra);
+                                }
+                                csf.AddLabel(validCurrentKey, currentValue.ToString().Trim(), extra);
                             }
                             
-                            // Parse the new line
                             inMultiLine = false;
                             currentKey = null;
                             currentValue = null;
+                            currentExtra = null;
                             
-                            // Process the current line
                             if (TryParseLine(line, out string newKey, out string newValue, out bool newIsMultiLine))
                             {
                                 currentKey = newKey;
@@ -176,14 +183,22 @@ namespace SadPencil.Ra2CsfFile
                                 else
                                 {
                                     currentValue = new StringBuilder(newValue);
-                                    // Add the entry immediately for single-line values
                                     string validNewKey = ConvertToValidLabelName(currentKey);
                                     if (!string.IsNullOrEmpty(validNewKey))
                                     {
-                                        csf.AddLabel(validNewKey, currentValue.ToString());
+                                        byte[] extra = null;
+                                        if (!string.IsNullOrEmpty(currentExtra))
+                                        {
+                                            if (options.TreatExtraAsText)
+                                                extra = Encoding.UTF8.GetBytes(currentExtra);
+                                            else
+                                                extra = Convert.FromBase64String(currentExtra);
+                                        }
+                                        csf.AddLabel(validNewKey, currentValue.ToString(), extra);
                                     }
                                     currentKey = null;
                                     currentValue = null;
+                                    currentExtra = null;
                                 }
                             }
                         }
@@ -196,11 +211,20 @@ namespace SadPencil.Ra2CsfFile
                         string validCurrentKey = ConvertToValidLabelName(currentKey);
                         if (!string.IsNullOrEmpty(validCurrentKey))
                         {
-                            csf.AddLabel(validCurrentKey, currentValue.ToString().Trim());
+                            byte[] extra = null;
+                            if (!string.IsNullOrEmpty(currentExtra))
+                            {
+                                if (options.TreatExtraAsText)
+                                    extra = Encoding.UTF8.GetBytes(currentExtra);
+                                else
+                                    extra = Convert.FromBase64String(currentExtra);
+                            }
+                            csf.AddLabel(validCurrentKey, currentValue.ToString().Trim(), extra);
                         }
                         currentKey = null;
                         currentValue = null;
                         inMultiLine = false;
+                        currentExtra = null;
                     }
 
                     // Parse new line
@@ -216,14 +240,22 @@ namespace SadPencil.Ra2CsfFile
                         else
                         {
                             currentValue = new StringBuilder(value);
-                            // Add the entry immediately for single-line values
                             string validCurrentKey = ConvertToValidLabelName(currentKey);
                             if (!string.IsNullOrEmpty(validCurrentKey))
                             {
-                                csf.AddLabel(validCurrentKey, currentValue.ToString());
+                                byte[] extra = null;
+                                if (!string.IsNullOrEmpty(currentExtra))
+                                {
+                                    if (options.TreatExtraAsText)
+                                        extra = Encoding.UTF8.GetBytes(currentExtra);
+                                    else
+                                        extra = Convert.FromBase64String(currentExtra);
+                                }
+                                csf.AddLabel(validCurrentKey, currentValue.ToString(), extra);
                             }
                             currentKey = null;
                             currentValue = null;
+                            currentExtra = null;
                         }
                     }
                 }
@@ -234,10 +266,21 @@ namespace SadPencil.Ra2CsfFile
                     string validCurrentKey = ConvertToValidLabelName(currentKey);
                     if (!string.IsNullOrEmpty(validCurrentKey))
                     {
-                        csf.AddLabel(validCurrentKey, currentValue.ToString().Trim());
+                        byte[] extra = null;
+                        if (!string.IsNullOrEmpty(currentExtra))
+                        {
+                            if (options.TreatExtraAsText)
+                                extra = Encoding.UTF8.GetBytes(currentExtra);
+                            else
+                                extra = Convert.FromBase64String(currentExtra);
+                        }
+                        csf.AddLabel(validCurrentKey, currentValue.ToString().Trim(), extra);
                     }
                 }
             }
+
+            if (options.OrderByKey)
+                csf = csf.OrderByKey();
 
             return csf;
         }
@@ -256,21 +299,33 @@ namespace SadPencil.Ra2CsfFile
             
             using (var sw = new StreamWriter(stream, Encoding.UTF8))
             {
-                // Write metadata header
                 sw.WriteLine($"# {fileName}");
                 sw.WriteLine($"# version: {csf.Version}");
                 sw.WriteLine($"# language: {(int)csf.Language}");
                 sw.WriteLine($"# csf count: {csf.Labels.Count}");
                 sw.WriteLine($"# build time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n");
 
-                // Write all labels using full key (including section if present)
-                foreach (var label in csf.Labels)
+                // Write labels in determined order
+                foreach (string labelName in csf.GetLabelsInWriteOrder())
                 {
-                    if (label.Value.Contains("\n"))
+                    if (!csf.Labels.TryGetValue(labelName, out string labelValue))
+                        continue;
+
+                    byte[] extra = csf.GetExtra(labelName);
+                    if (extra != null)
                     {
-                        // Multi-line value with YAML-style indentation
-                        sw.WriteLine($"{label.Key}: >-");
-                        string[] lines = label.Value.Split('\n');
+                        string extraStr;
+                        if (csf.Options.TreatExtraAsText)
+                            extraStr = Encoding.UTF8.GetString(extra);
+                        else
+                            extraStr = Convert.ToBase64String(extra);
+                        sw.WriteLine($"# extra: {extraStr}");
+                    }
+
+                    if (labelValue.Contains("\n"))
+                    {
+                        sw.WriteLine($"{labelName}: >-");
+                        string[] lines = labelValue.Split('\n');
                         foreach (string line in lines)
                         {
                             sw.WriteLine($"  {line.TrimEnd()}");
@@ -278,8 +333,7 @@ namespace SadPencil.Ra2CsfFile
                     }
                     else
                     {
-                        // Single-line value
-                        sw.WriteLine($"{label.Key}: {label.Value}");
+                        sw.WriteLine($"{labelName}: {labelValue}");
                     }
                 }
             }

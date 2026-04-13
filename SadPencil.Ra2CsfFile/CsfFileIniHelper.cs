@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -12,16 +13,19 @@ namespace SadPencil.Ra2CsfFile
 {
     /// <summary>
     /// Helper class for working with INI files representing CSF string tables.
+    /// Supports extra data (WRTS) as a Base64-encoded string or plain text.
+    /// Supports label ordering via CsfFileOptions.OrderByKey.
     /// </summary>
     public static class CsfFileIniHelper
     {
-        private const String INI_TYPE_NAME = "SadPencil.Ra2CsfFile.Ini";
-        private const String INI_FILE_HEADER_SECTION_NAME = "SadPencil.Ra2CsfFile.Ini";
-        private const String INI_FILE_HEADER_INI_VERSION_KEY = "IniVersion";
-        private const String INI_FILE_HEADER_CSF_VERSION_KEY = "CsfVersion";
-        private const String INI_FILE_HEADER_CSF_LANGUAGE_KEY = "CsfLang";
+        private const string INI_TYPE_NAME = "SadPencil.Ra2CsfFile.Ini";
+        private const string INI_FILE_HEADER_SECTION_NAME = "SadPencil.Ra2CsfFile.Ini";
+        private const string INI_FILE_HEADER_INI_VERSION_KEY = "IniVersion";
+        private const string INI_FILE_HEADER_CSF_VERSION_KEY = "CsfVersion";
+        private const string INI_FILE_HEADER_CSF_LANGUAGE_KEY = "CsfLang";
 
-        private const Int32 INI_VERSION = 2;
+        private const int INI_VERSION = 3; // Increased version due to extra support
+
         private static IniParserConfiguration IniParserConfiguration { get; } = new IniParserConfiguration()
         {
             AllowDuplicateKeys = false,
@@ -29,7 +33,7 @@ namespace SadPencil.Ra2CsfFile
             AllowKeysWithoutSection = false,
             CommentRegex = new Regex("a^"), // nothing matches
             CaseInsensitive = true,
-            AssigmentSpacer = String.Empty,
+            AssigmentSpacer = string.Empty,
             SectionRegex = new Regex("^(\\s*?)\\[{1}\\s*[\\p{L}\\p{P}\\p{M}_\\\"\\'\\{\\}\\#\\+\\;\\*\\%\\(\\)\\=\\?\\&\\$\\^\\<\\>\\`\\^|\\,\\:\\/\\.\\-\\w\\d\\s\\\\\\~]+\\s*\\](\\s*?)$"),
         };
 
@@ -88,7 +92,7 @@ namespace SadPencil.Ra2CsfFile
             csf.Version = Convert.ToInt32(header[INI_FILE_HEADER_CSF_VERSION_KEY], CultureInfo.InvariantCulture);
             csf.Language = CsfLangHelper.GetCsfLang(Convert.ToInt32(header[INI_FILE_HEADER_CSF_LANGUAGE_KEY], CultureInfo.InvariantCulture));
 
-            // Loading label
+            // Loading labels
             foreach (var section in ini.Sections)
             {
                 if (section.SectionName == INI_FILE_HEADER_SECTION_NAME) continue;
@@ -110,10 +114,27 @@ namespace SadPencil.Ra2CsfFile
                 if (valueParts.Count > 0)
                 {
                     string labelValue = string.Join(CsfFile.LineBreakCharacters, valueParts);
-                    labelName = CsfFile.LowercaseLabelName(labelName);
-                    csf.AddLabel(labelName, labelValue);
+                    
+                    // Read extra data if present
+                    byte[] extra = null;
+                    if (key.ContainsKey("Extra"))
+                    {
+                        string extraStr = key["Extra"];
+                        if (!string.IsNullOrEmpty(extraStr))
+                        {
+                            if (options.TreatExtraAsText)
+                                extra = Encoding.UTF8.GetBytes(extraStr);
+                            else
+                                extra = Convert.FromBase64String(extraStr);
+                        }
+                    }
+                    
+                    csf.AddLabel(labelName, labelValue, extra);
                 }
             }
+
+            if (options.OrderByKey)
+                csf = csf.OrderByKey();
 
             return csf;
         }
@@ -142,11 +163,11 @@ namespace SadPencil.Ra2CsfFile
             header.AddKey(INI_FILE_HEADER_CSF_VERSION_KEY, csf.Version.ToString(CultureInfo.InvariantCulture));
             header.AddKey(INI_FILE_HEADER_CSF_LANGUAGE_KEY, ((int)csf.Language).ToString(CultureInfo.InvariantCulture));
 
-            // Labels record
-            foreach (var label in csf.Labels)
+            // Write labels in determined order
+            foreach (string labelName in csf.GetLabelsInWriteOrder())
             {
-                string labelName = label.Key;
-                string labelValue = label.Value;
+                if (!csf.Labels.TryGetValue(labelName, out string labelValue))
+                    continue;
 
                 if (!CsfFile.ValidateLabelName(labelName))
                     throw new InvalidDataException($"Invalid characters in label name \"{labelName}\".");
@@ -160,6 +181,24 @@ namespace SadPencil.Ra2CsfFile
                     string keyName = GetIniLabelValueKeyName(i + 1);
                     labelSection.AddKey(keyName, valueLines[i]);
                 }
+
+                // Write extra data if present
+                byte[] extra = csf.GetExtra(labelName);
+                if (extra != null)
+                {
+                    string extraStr;
+                    if (csf.Options.TreatExtraAsText)
+                        extraStr = Encoding.UTF8.GetString(extra);
+                    else
+                        extraStr = Convert.ToBase64String(extra);
+                    labelSection.AddKey("Extra", extraStr);
+                }
+
+                // Add trimmable line warning comment if needed
+                if (labelValue != TrimMultiLine(labelValue))
+                {
+                    labelSection.AddKey("WhiteSpaceWarning", "WARNING: This label value contains leading or trailing whitespace characters in one or more lines.");
+                }
             }
 
             using (var sw = new StreamWriter(stream, new UTF8Encoding(false)))
@@ -167,5 +206,13 @@ namespace SadPencil.Ra2CsfFile
                 sw.Write(ini.ToString());
             }
         }
+
+        /// <summary>
+        /// Trim each line's leading and trailing whitespace characters in a multi-line string.
+        /// </summary>
+        /// <param name="input">The input multi-line string.</param>
+        /// <returns>The trimmed multi-line string.</returns>
+        public static string TrimMultiLine(string input) => 
+            input is null ? null : string.Join(CsfFile.LineBreakCharacters, input.Split(new[] { CsfFile.LineBreakCharacters }, StringSplitOptions.None).Select(l => l.Trim()));
     }
 }

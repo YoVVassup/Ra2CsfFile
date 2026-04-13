@@ -4,261 +4,204 @@
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)  
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Github All Releases](https://img.shields.io/github/downloads/YoVVassup/Ra2CsfFile/total.svg)]()
 
-CsfStudio is a powerful command-line tool for working with Red Alert 2 string table files (.csf). It supports conversion between multiple formats, merging of string tables, and subtraction operations.
+**CsfStudio** is a powerful command‑line tool for working with **Red Alert 2** and **Yuri's Revenge** string table files (`.csf`). It supports **bidirectional conversion** between multiple formats, **set operations** on label collections, **map label checking**, **translation helpers**, and **encoding fixes**.
+
+---
 
 ## Features
 
-- 🔄 **Bidirectional Conversion**: Convert between CSF, INI, JSON, YAML, LLF and TXT formats  
-- 🧩 **Merge Operations**: Combine multiple string tables into one  
-- ✂️ **Subtract Operations**: Remove labels present in other files  
-- 🔠 **Encoding Fix**: Correct text encoding issues in existing files  
-- 📊 **Metadata Preservation**: Maintain version and language information  
-- ✅ **Validation**: Strict label name and format validation
-- ⚡ Fast processing with .NET Framework 4.0
+- 🔄 **Format conversion** – CSF ↔ INI / JSON / YAML / LLF / TXT / Excel (XLSX/XLS) / CSV
+- 🧩 **Set operations** – union, subtraction, intersection, symmetric difference, case override
+- 🗺️ **Map label check** – scan `.map`, `.mpr`, `.yrm` files to find missing labels in CSF
+- 🌍 **Translation helpers** – generate translation templates, side‑by‑side comparisons, update helpers
+- 🔠 **Encoding fix** – reinterpret CSF text using a different codepage (e.g. Windows‑1251, GB18030)
+- 🧠 **Preserves extra data (WRTS)** – all operations keep the optional binary block
+- 📝 **Label ordering** – maintain original order or sort alphabetically (`--order-by-key`)
+- 🧹 **CSV flexibility** – supports custom delimiters and `sep=` line for Excel compatibility
+
+---
 
 ## Supported Formats
 
-### CSF Format (Command & Conquer String File)
-- **Extension**: `.csf`  
-- **Type**: Binary game format  
-- **Structure**:  
-```  
-Offset  Type      Description  
-0x00    char[4]   Header " FSC"  
-0x04    int32     Version (typically 3)  
-0x08    int32     Label count  
-0x0C    int32     String count  
-0x10    int32     Unused  
-0x14    int32     Language ID  
-...     ...       Label entries:  
-char[4]   " LBL" header  
-int32     Value count  
-int32     Label name length  
-char[]    Label name (ASCII)  
-char[4]   " RTS" or "WRTS"  
-int32     Value length  
-byte[]    Value (UTF-16 NOT encoded)  
-```
+| Format | Read | Write | Extra data | Metadata | Multi‑line |
+|--------|------|-------|------------|----------|-------------|
+| CSF (binary) | ✅ | ✅ | ✅ (WRTS) | ✅ (version, language) | ✅ |
+| INI | ✅ | ✅ | ✅ (Base64 or text) | ✅ | ✅ |
+| JSON | ✅ | ✅ | ✅ (Base64 or text) | ✅ | ✅ |
+| YAML | ✅ | ✅ | ✅ (Base64 or text) | ✅ | ✅ (literal) |
+| LLF | ✅ | ✅ | ✅ (comment) | ✅ (comments) | ✅ |
+| TXT (CSFTool) | ✅ | ✅ | ✅ (`!extra\|`) | ✅ (`!metadata\|`) | ✅ (escaped) |
+| Excel (XLSX/XLS) | ✅ | ✅ | ✅ (text/Base64) | ✅ (separate sheet) | ✅ |
+| CSV | ✅ | ✅ | ✅ (text/Base64) | ✅ (`#version=`) | ✅ (RFC 4180) |
 
-### INI Format
-- **Extension**: `.ini`  
-- **Type**: Text-based configuration  
-- **Structure**:  
-```ini  
-[SadPencil.Ra2CsfFile.Ini]  
-IniVersion = 2  
-CsfVersion = 3  
-CsfLang = 0
+> All conversions preserve **label order** (original or sorted) and **extra data** (WRTS) where applicable.
 
-[LABEL_NAME]  
-Value = Single line value  
-ValueLine2 = Additional line  
-```
+---
 
-### JSON Format
-- **Extension**: `.json`  
-- **Type**: Standard data interchange  
-- **Structure**:  
-```json  
-{  
-  "version": 3,  
-  "language": 0,  
-  "labels": {  
-    "LABEL1": "Value 1",  
-    "LABEL2": "Multi-line\nvalue"  
-  }  
-}  
-```
+## Installation & Build
 
-### YAML Format
-- **Extension**: `.yaml` or `.yml`  
-- **Type**: Human-readable data serialization  
-- **Structure**:  
-```yaml  
-version: 3  
-language: 0 
-version_yaml: 1.2 
-labels:  
-  LABEL1: Value 1  
-  LABEL2: |  
-    Multi-line  
-    value  
-```
+### Prerequisites
+- .NET Framework 4.0 or higher
+- Visual Studio 2019 / 2022 (or any C# compiler)
 
-### LLF Format (Label Language File)
-- **Extension**: `.llf`  
-- **Type**: Human-readable editing format  
-- **Structure**:  
-```
-# filename
-# version: 3  
-# language: 0  
-# csf count: 42  
-# build time: 2025-08-01 14:30:00
-
-KEY_SIMPLE: Simple value  
-KEY_MULTILINE: >-  
-    Multi-line  
-    value  
-```
-
-### TXT Format
-- **Extension:** `.txt`
-- **Type**: Simple text format (compatible with CSFTool)
-
-```
-KEY_SIMPLE|Simple value
-KEY_MULTILINE|Multi-line\nvalue 
-```
-
-## Encoding Fix Feature
-
-Fix incorrectly interpreted text encoding with `--fix-encoding`:
-
+### Build from source
 ```bash
-CsfStudio.exe -i input.csf -o fixed.csf --fix-encoding windows-1251
+git clone https://github.com/YoVVassup/Ra2CsfFile.git
+cd Ra2CsfFile/CsfStudio
+nuget restore
+msbuild /p:Configuration=Release
 ```
 
-**Supported Encodings**:  
-- `gb18030` (Chinese)  
-- `gb2312` (Chinese)
-- `windows-1251` (Cyrillic)  
-- `windows-1252` (Western European)  
-- `iso-8859-1` (Latin-1)  
-- `utf-8`  
-- `unicode` (UTF-16)
+The executable `CsfStudio.exe` will be placed in `bin\Release\`. All dependencies (NPOI, YamlDotNet, Newtonsoft.Json, etc.) are embedded using **Costura.Fody** – no extra DLLs required.
+
+---
 
 ## Command Line Usage
 
-### Basic Syntax
-```bash  
-CsfStudio.exe -i input.ext -o output.ext --to-format  
-CsfStudio.exe -i file1.ext,file2.ext -o result.ext --operation  
+### Basic syntax
+```text
+CsfStudio.exe -i <input> [-i <input2> ...] -o <output> --<operation> [options]
 ```
 
-### Operations
-| Command           | Description                      |  
-|-------------------|----------------------------------| 
-| `-i`, `--input`   | Input file path(s)               | 
-| `-o`, `--output`  | Output file path                 | 
-| `--to-ini`        | Convert to INI format            |  
-| `--to-csf`        | Convert to CSF format            |  
-| `--to-json`       | Convert to JSON format           |  
-| `--to-yaml`       | Convert to YAML format           |  
-| `--to-llf`        | Convert to LLF format            |  
-| `--to-txt`        | Convert to TXT format            | 
-| `--merge`         | Merge multiple files             |  
-| `--subtract`      | Subtract labels from other files |  
-| `--fix-encoding`  | Fix text encoding                |  
-| `-h`, `--help`    | Show help                        | 
+### Global options
+| Option | Description |
+|--------|-------------|
+| `-i, --input <file>` | Input file path (comma‑separated for multiple) |
+| `-o, --output <file>` | Output file path |
+| `--extra-mode text\|base64` | How to store extra data in text formats (default: `text`) |
+| `--csv-delimiter <delim>` | CSV delimiter: `auto`, `comma`, `semicolon`, `tab`, `pipe`, `space` |
+| `--order-by-key` | Sort labels alphabetically (case‑insensitive) when saving |
+| `--diff-placeholder <text>` | Placeholder for differing values in intersection (default: `TODO_Different_Value`) |
+| `-h, --help` | Show detailed help |
+
+---
+
+## Format Conversion
+
+Convert a single file from one format to another. The output format is determined by the file extension of `-o`.
+
+### Commands
+- `--to-csf`   → save as `.csf`
+- `--to-ini`   → save as `.ini`
+- `--to-json`  → save as `.json`
+- `--to-yaml`  → save as `.yaml`
+- `--to-llf`   → save as `.llf`
+- `--to-txt`   → save as `.txt` (CSFTool format)
+- `--to-excel` → save as `.xlsx` or `.xls`
+- `--to-csv`   → save as `.csv`
 
 ### Examples
 ```bash
-# Convert CSF to LLF
-CsfStudio.exe -i stringtable01.csf -o stringtable01.llf --to-llf
+# CSF → INI
+CsfStudio.exe -i stringtable01.csf -o stringtable01.ini --to-ini
 
-# Convert LLF to INI
-CsfStudio.exe -i stringtable01.llf -o stringtable01.ini --to-ini
+# INI → Excel
+CsfStudio.exe -i stringtable01.ini -o stringtable01.xlsx --to-excel
 
-# Merge two files
-CsfStudio.exe -i stringtable01.json,stringtable02.json -o stringtable03.json --merge
-
-# Subtract labels
-CsfStudio.exe -i stringtable01.llf,stringtable02.llf -o stringtable03.llf --subtract  
-
-# Fix Encoding
-CsfStudio.exe -i stringtable01.csf -o stringtable02.csf --fix-encoding windows-1251
-
-```
-### Attention
-
-Operations of `--merge`, `--subtract` and `--fix-encoding` only work within the same format! (`.ext`)
- 
-## Format Comparison Matrix
-
-| Feature               | CSF    |   INI  | JSON  | YAML   |   LLF  | TXT |
-|-----------------------|--------|--------|-------|--------|--------|------|
-| **Human-readable**    | ❌     | ✅    | 🟡   | ✅     | ✅    | ✅   |
-| **Metadata support**  | ✅     | ✅    | ✅   | ✅     | ✅    | 🟡   |
-| **Multi-line values** | ✅     | ✅    | ✅   | ✅     | ✅    | ✅   |
-| **Language support**  | ✅     | ✅    | ✅   | ✅     | ✅    | 🟡   |
-| **Version support**   | ✅     | ✅    | ✅   | ✅     | ✅    | 🟡   |
-| **Edit complexity**   | High   | Medium | Low   | Low    | Low    | Low   |   
-| **File size**         | Small  | Medium | Large | Medium | Medium | Medium |
-| **Best use case**     | Game   | Tools  | APIs  | Config | Editing | Tools |
-
-## Technical Specifications
-
-1. **Character Encoding**:  
-- CSF: UTF-16 with bitwise NOT encoding  
-- Text formats: UTF-8  
-- Special handling for Windows-1252 characters (128-159)
-
-2. **Label Rules**:  
-- ASCII characters 32-126 only  
-- Case-insensitive (stored in lowercase)  
-- No explicit length limit
-
-3. **Multi-line Handling**:  
-- All formats support multi-line values  
-- Line breaks normalized to LF (`\n`)  
-- LLF and YAML provide most natural representation
-
-4. **Metadata Preservation**:  
-- Version (default 3) and language preserved in all conversions  
-- First file's metadata used in merge operations  
-- Language IDs: 0=EnglishUS, 1=EnglishUK, ..., 9=Chinese, -1=Unknown
-
-## Building from Source
-
-### Prerequisites
-- .NET Framework 4.0  
-- Visual Studio 2019 or later
-
-### Steps
-1. Clone repository:  
-```bash  
-git clone https://github.com/YoVVassup/Ra2CsfFile.git  
-```  
-2. Open `SadPencil.Ra2CsfFile.sln` in Visual Studio or Rider (JetBrains) 
-3. Restore NuGet packages  
-4. Build solution
-
-## License
-MIT License - see [LICENSE](https://github.com/YoVVassup/Ra2CsfFile/blob/cli/LICENSE) file for details
-
-## Acknowledgments
-- Westwood Studios for creating Command & Conquer: Red Alert 2
-- The modding community for their documentation of the CSF format
-- Contributors to the open-source libraries used in this project
-
-## Notes
-Reference: https://modenc.renegadeprojects.com/CSF_File_Format  
-Easy to get .Net Target Framework SDK: Run [Get_.NET_Target_Framework.ps1](https://github.com/YoVVassup/Ra2CsfFile/blob/main/Get_.NET_Target_Framework.ps1)  
-TXT File format from [CSFTool](https://github.com/Starkku/CSFTool) is licensed under [GPL Version 3](https://github.com/Starkku/CSFTool/blob/master/LICENSE.txt)
-
-## Version History SadPencil.Ra2CsfFile (DLL)
-
-```
-v2.2.2: added TXT serialization support
-v2.2.1: added LLF serialization support
-v2.2.0: added JSON and YAML serialization support
-v2.1.3: downgrade to compatibility .NET Framework 4.0
-v2.1.2: disable Encoding1252WriteWorkaround by default; add CLSCompliant attribute to namespace SadPencil.Ra2CsfFile
-v2.1.1: fix that some label names are not loaded successfully from .ini files
-v2.1.0: api breaking change: change the behavior of Csf.AddLabel() with Add&Replace, so that the original ra2.csf file can be loaded
-v2.0.2: remove the space around the "=" sign of ini file to fix a bug processing values contains " = " pattern
-v2.0.1: fix a bug that CSF file with non-lowercase label name can not be loaded
-v2.0.0: migrate to .NET Standard 2.0; replace dependency MadMilkman.Ini with ini-parser-netstandard; add Csf.RemoveLabel() method.
-v1.3.1: api breaking change: Labels.Add will be replaced with AddLabel; add encoding 1252 workaround options for the original RA2 fonts; add clone constructor for CsfFile. 
-v1.2.2: space in labels is now tolerated so that the library will not complain about the string table file in RA2.
-v1.2.1: fix a bug where some labels of the ini file is not loaded.
-v1.2.0: api breaking change: CsfFile.Labels will now store only one value for a label, as the rest values (if any) are not used by the game; api change: deprecate CsfFile.GetCsfLang() with CsfLangHelper.GetCsfLang(); api change: deprecate CsfFile.LoadFromIniFile() with CsfFileIniHelper.LoadFromIniFile(); api change: deprecate CsfFile.WriteIniFile() with CsfFileIniHelper.WriteIniFile().
-v1.1.1: add XML documentation; re-release the library with Release configuration.
-v1.1.0: fix a bug where multi-line text will be trimmed mistakenly; invalid chars in label name will now be checked.
+# CSV → CSF (with semicolon delimiter)
+CsfStudio.exe -i stringtable01.csv -o stringtable01.csf --to-csf --csv-delimiter semicolon
 ```
 
 ---
-<b>CsfStudio</b> - Your 💪 tool for Red Alert 2 string table manipulation!
+
+## Set Operations (two or more input files)
+
+| Command | Description |
+|---------|-------------|
+| `--merge` | Union: all labels from all files |
+| `--subtract` | A minus B: labels in first but not in others |
+| `--intersection` | Labels present in **all** files; differing values replaced with `--diff-placeholder` |
+| `--symmetric-difference` | Labels present in exactly **one** file (values must be consistent) |
+| `--override-case` | Keep values from current file, but use label case from upstream file |
+
+### Examples
+```bash
+# Union
+CsfStudio.exe -i stringtable01.csf,stringtable02.csf -o stringtable_merged.csf --merge
+
+# Intersection (with custom placeholder)
+CsfStudio.exe -i stringtable01.csf,stringtable02.csf -o stringtable_common.csf --intersection --diff-placeholder "DIFFERENT"
+
+# Override case
+CsfStudio.exe -i stringtable_upstream.csf,stringtable_current.csf -o stringtable_fixed.csf --override-case
+```
+
+---
+
+## Map Label Check
+
+Scan map files (`.map`, `.mpr`, `.yrm`) and list all labels that are used in maps but missing from the given CSF.
+
+```bash
+CsfStudio.exe -i ra2md.csf --check-maps --map-folder "C:\RA2\Maps" -o missing_labels.txt
+```
+
+If `-o` is omitted, the missing labels are printed to the console.
+
+---
+
+## Translation Helpers
+
+| Command | Description | Input count | Output |
+|---------|-------------|-------------|--------|
+| `--translation-new` | Create translation template (all values replaced with placeholder) | 1 (upstream) | any format |
+| `--translation-tile` | Side‑by‑side comparison (UpstreamLine / TranslatedLine) | 2 (upstream, translated) | only `.ini` |
+| `--translation-update` | Update translation after upstream changes | 3 (old_upstream, new_upstream, old_translated) | any format |
+| `--translation-override` | Merge: use translated if exists, otherwise upstream | 2 (upstream, translated) | any format |
+
+### Options
+- `--translation-placeholder <text>` – placeholder for missing translations (default: `TODO_Translation_Needed`)
+- `--translation-delete-placeholder <text>` – placeholder for labels removed in new upstream (default: `TODO_Translation_Delete_Needed`)
+
+### Examples
+```bash
+# Create new translation template
+CsfStudio.exe -i stringtable_upstream.csf -o stringtable_trans.ini --translation-new
+
+# Side‑by‑side comparison (INI only)
+CsfStudio.exe -i stringtable_upstream.csf,stringtable_translated.csf -o stringtable_compare.ini --translation-tile
+
+# Update translation after upstream changes
+CsfStudio.exe -i stringtable_old_up.csf,stringtable_new_up.csf,stringtable_old_trans.csf -o stringtable_update.ini --translation-update
+
+# Override: prefer translated value
+CsfStudio.exe -i stringtable_upstream.csf,stringtable_translated.csf -o stringtable_merged.csf --translation-override
+```
+
+---
+
+## Encoding Fix
+
+Reinterpret the string values of a CSF file using a different source encoding. Useful when a CSF was saved with a legacy codepage (e.g., Windows‑1251 for Cyrillic, GB18030 for Chinese).
+
+```bash
+CsfStudio.exe -i stringtable_broken.csf -o stringtable_fixed.csf --fix-encoding windows-1251
+```
+
+### Supported encodings
+- `gb18030`, `gb2312` – Chinese
+- `windows-1251` – Cyrillic
+- `windows-1252` – Western European
+- `iso-8859-1` – Latin‑1
+- `utf-8`, `unicode` (UTF‑16)
+
+---
+
+## Notes
+
+- Extra data (WRTS) is **preserved** in all operations.
+- Use `--extra-mode base64` to store extra data as Base64 in text formats (INI, JSON, YAML, TXT, LLF).
+- `--translation-tile` only supports `.ini` output because it adds custom keys (`UpstreamLineN`, `TranslatedLineN`).
+- When using `--translation-update`, labels that were removed in the new upstream receive a `_DELETE` suffix.
+- Map label check parses `UIName` in any section, `Actions` (action types 11/103 with parameter 4), and the `Ranking` section.
+
+---
+
+## License
+
+MIT License – see [LICENSE](https://github.com/YoVVassup/Ra2CsfFile/blob/main/LICENSE) file for details.
+
+---
+
+**CsfStudio** – your complete tool for Red Alert 2 string table manipulation.

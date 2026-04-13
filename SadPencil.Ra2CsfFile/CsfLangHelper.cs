@@ -12,9 +12,9 @@ namespace SadPencil.Ra2CsfFile
         /// </summary>
         /// <param name="value">The integer to be converted.</param>
         /// <returns>The corresponding CsfLang enum.</returns>
-        public static CsfLang GetCsfLang(Int32 value)
+        public static CsfLang GetCsfLang(int value)
         {
-            if (typeof(CsfLang).IsEnumDefined(value))
+            if (Enum.IsDefined(typeof(CsfLang), value))
             {
                 return (CsfLang)value;
             }
