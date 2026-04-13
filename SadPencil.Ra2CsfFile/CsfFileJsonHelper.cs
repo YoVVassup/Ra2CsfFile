@@ -8,6 +8,8 @@ namespace SadPencil.Ra2CsfFile
 {
     /// <summary>
     /// Helper class for working with JSON files representing CSF string tables.
+    /// Supports extra data (WRTS) as a Base64-encoded string or plain text.
+    /// Supports label ordering via CsfFileOptions.OrderByKey.
     /// </summary>
     public static class CsfFileJsonHelper
     {
@@ -20,12 +22,26 @@ namespace SadPencil.Ra2CsfFile
             public int Language { get; set; }
 
             [JsonProperty("labels")]
-            public Dictionary<string, string> Labels { get; set; }
+            public Dictionary<string, JsonLabel> Labels { get; set; }
+        }
+
+        private class JsonLabel
+        {
+            [JsonProperty("value")]
+            public string Value { get; set; }
+
+            [JsonProperty("extra", NullValueHandling = NullValueHandling.Ignore)]
+            public string Extra { get; set; }
         }
 
         /// <summary>
         /// Loads a CSF file from a JSON representation.
         /// </summary>
+        /// <param name="stream">Stream with JSON file.</param>
+        /// <param name="options">Loading options. If null, default options are used.</param>
+        /// <returns>Loaded CSF file.</returns>
+        /// <exception cref="ArgumentNullException">If the stream is null.</exception>
+        /// <exception cref="InvalidDataException">If the JSON format is incorrect.</exception>
         public static CsfFile LoadFromJsonFile(Stream stream, CsfFileOptions options = null)
         {
             if (stream == null) throw new ArgumentNullException(nameof(stream));
@@ -40,12 +56,31 @@ namespace SadPencil.Ra2CsfFile
                     var json = sr.ReadToEnd();
                     var model = JsonConvert.DeserializeObject<JsonCsfModel>(json);
 
+                    if (model == null)
+                        throw new InvalidDataException("JSON deserialization returned null.");
+
                     csf.Version = model.Version;
                     csf.Language = CsfLangHelper.GetCsfLang(model.Language);
 
-                    foreach (var label in model.Labels)
+                    foreach (var labelPair in model.Labels)
                     {
-                        csf.AddLabel(label.Key, label.Value);
+                        string labelName = labelPair.Key;
+                        string labelValue = labelPair.Value?.Value ?? "";
+                        string extraStr = labelPair.Value?.Extra;
+
+                        if (!CsfFile.ValidateLabelName(labelName))
+                            throw new InvalidDataException($"Invalid label name '{labelName}' in JSON.");
+
+                        byte[] extra = null;
+                        if (!string.IsNullOrEmpty(extraStr))
+                        {
+                            if (options.TreatExtraAsText)
+                                extra = Encoding.UTF8.GetBytes(extraStr);
+                            else
+                                extra = Convert.FromBase64String(extraStr);
+                        }
+
+                        csf.AddLabel(labelName, labelValue, extra);
                     }
                 }
             }
@@ -54,12 +89,18 @@ namespace SadPencil.Ra2CsfFile
                 throw new InvalidDataException("Invalid JSON format.", ex);
             }
 
+            if (options.OrderByKey)
+                csf = csf.OrderByKey();
+
             return csf;
         }
 
         /// <summary>
         /// Saves a CSF file to a JSON representation.
         /// </summary>
+        /// <param name="csf">CSF file to save.</param>
+        /// <param name="stream">Stream for writing.</param>
+        /// <exception cref="ArgumentNullException">If the CSF file or stream is null.</exception>
         public static void WriteJsonFile(CsfFile csf, Stream stream)
         {
             if (csf == null) throw new ArgumentNullException(nameof(csf));
@@ -69,8 +110,31 @@ namespace SadPencil.Ra2CsfFile
             {
                 Version = csf.Version,
                 Language = (int)csf.Language,
-                Labels = new Dictionary<string, string>(csf.Labels)
+                Labels = new Dictionary<string, JsonLabel>()
             };
+
+            // Write labels in determined order
+            foreach (string labelName in csf.GetLabelsInWriteOrder())
+            {
+                if (!csf.Labels.TryGetValue(labelName, out string labelValue))
+                    continue;
+
+                var jsonLabel = new JsonLabel
+                {
+                    Value = labelValue ?? ""
+                };
+
+                byte[] extra = csf.GetExtra(labelName);
+                if (extra != null)
+                {
+                    if (csf.Options.TreatExtraAsText)
+                        jsonLabel.Extra = Encoding.UTF8.GetString(extra);
+                    else
+                        jsonLabel.Extra = Convert.ToBase64String(extra);
+                }
+
+                model.Labels.Add(labelName, jsonLabel);
+            }
 
             using (var sw = new StreamWriter(stream, Encoding.UTF8, 1024))
             {

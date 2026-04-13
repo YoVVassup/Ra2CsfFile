@@ -52,6 +52,7 @@
         <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
         <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
         <PackageReference Include="YamlDotNet" Version="13.7.1" />
+        <PackageReference Include="NPOI" Version="2.5.1" />
     </ItemGroup>
 
     <ItemGroup>
@@ -59,9 +60,12 @@
         <Compile Include="CsfFileIniHelper.cs" />
         <Compile Include="CsfFileJsonHelper.cs" />
         <Compile Include="CsfFileLlfHelper.cs" />
+        <Compile Include="CsfFileMapHelper.cs" />
         <Compile Include="CsfFileOptions.cs" />
         <Compile Include="CsfFileTxtHelper.cs" />
         <Compile Include="CsfFileYamlHelper.cs" />
+        <Compile Include="CsfFileExcelHelper.cs" />
+        <Compile Include="CsfFileCsvHelper.cs" />
         <Compile Include="CsfLang.cs" />
         <Compile Include="CsfLangHelper.cs" />
         <Compile Include="Encoding1252Workaround.cs" />
@@ -72,14 +76,14 @@
         <!-- NuGet Package Settings -->
         <PackageId>SadPencil.Ra2CsfFile</PackageId>
         <Title>RA2 CSF File Library</Title>
-        <Version>2.2.2</Version>
+        <Version>2.3.0</Version>
         <Authors>sadpencil</Authors>
-        <Description>Load, edit, and save string table files (.csf) for Red Alert 2. Supports .ini, .json, .llf, .txt and .yaml formats.</Description>
+        <Description>Load, edit, and save string table files (.csf) for Red Alert 2. Supports .ini, .json, .yaml, .llf, .txt, .xlsx, .xls, .csv formats with extra data (WRTS) and label ordering.</Description>
         <PackageProjectUrl>https://github.com/YoVVassup/Ra2CsfFile</PackageProjectUrl>
         <RepositoryUrl>https://github.com/YoVVassup/Ra2CsfFile</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags>CSF Westwood Red-Alert-2 RA2</PackageTags>
-        <PackageReleaseNotes>Added LLF serialization support</PackageReleaseNotes>
+        <PackageTags>CSF Westwood Red-Alert-2 RA2 Excel CSV NPOI</PackageTags>
+        <PackageReleaseNotes>Added support for Excel (XLSX/XLS), CSV formats, extra data (WRTS), and label ordering. Requires NPOI 2.5.1 for Excel support. Version 2.3.0.</PackageReleaseNotes>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>

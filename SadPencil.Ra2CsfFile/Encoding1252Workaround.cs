@@ -1,19 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace SadPencil.Ra2CsfFile
 {
+    /// <summary>
+    /// Provides workaround for Windows-1252 to Unicode conversion for characters 128-159.
+    /// This is needed because RA2's original font treats these characters as Windows-1252 instead of Unicode.
+    /// </summary>
     internal static class Encoding1252Workaround
     {
-        public static IDictionary<Char, Char> Encoding1252ToUnicode { get; }
-        public static IDictionary<Char, Char> UnicodeToEncoding1252 { get; }
+        /// <summary>Mapping from Windows-1252 characters to Unicode characters.</summary>
+        public static IDictionary<char, char> Encoding1252ToUnicode { get; }
+
+        /// <summary>Mapping from Unicode characters to Windows-1252 characters.</summary>
+        public static IDictionary<char, char> UnicodeToEncoding1252 { get; }
 
         static Encoding1252Workaround()
         {
-            // Manually set mapping for characters 128-159 (Windows-1252 → Unicode)
-            var encoding1252ToUnicode = new Dictionary<Char, Char>
+            var encoding1252ToUnicode = new Dictionary<char, char>
             {
                 { '\u20AC', '\u0080' }, // €
                 { '\u201A', '\u0082' }, // ‚
@@ -50,36 +55,36 @@ namespace SadPencil.Ra2CsfFile
             UnicodeToEncoding1252 = unicodeToEncoding1252;
         }
 
-        public static String ConvertsEncoding1252ToUnicode(String value)
+        /// <summary>Converts a string from Windows-1252 encoding to Unicode (correcting the character mapping).</summary>
+        /// <param name="value">The string to convert. May be null.</param>
+        /// <returns>The converted string, or null if input was null.</returns>
+        public static string ConvertsEncoding1252ToUnicode(string value)
         {
+            if (value == null) return null;
             var result = new StringBuilder(value.Length);
             foreach (char c in value)
             {
                 if (Encoding1252ToUnicode.TryGetValue(c, out char unicodeChar))
-                {
                     result.Append(unicodeChar);
-                }
                 else
-                {
                     result.Append(c);
-                }
             }
             return result.ToString();
         }
 
-        public static String ConvertsUnicodeToEncoding1252(String value)
+        /// <summary>Converts a string from Unicode to Windows-1252 encoding (reversing the correction).</summary>
+        /// <param name="value">The string to convert. May be null.</param>
+        /// <returns>The converted string, or null if input was null.</returns>
+        public static string ConvertsUnicodeToEncoding1252(string value)
         {
+            if (value == null) return null;
             var result = new StringBuilder(value.Length);
             foreach (char c in value)
             {
                 if (UnicodeToEncoding1252.TryGetValue(c, out char encoding1252Char))
-                {
                     result.Append(encoding1252Char);
-                }
                 else
-                {
                     result.Append(c);
-                }
             }
             return result.ToString();
         }
