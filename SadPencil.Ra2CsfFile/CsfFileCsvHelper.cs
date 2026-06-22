@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
@@ -32,7 +32,7 @@ namespace SadPencil.Ra2CsfFile
             if (stream == null) throw new ArgumentNullException(nameof(stream));
 
             options = options ?? new CsfFileOptions();
-            encoding = encoding ?? Encoding.UTF8;
+            encoding = encoding ?? Encoding.Default;
             var csf = new CsfFile(options);
 
             using (var reader = new StreamReader(stream, encoding, true, 1024))
@@ -87,14 +87,7 @@ namespace SadPencil.Ra2CsfFile
                     if (!CsfFile.ValidateLabelName(label))
                         throw new InvalidDataException($"Invalid label name '{label}' in CSV.");
 
-                    byte[] extra = null;
-                    if (!string.IsNullOrEmpty(extraStr))
-                    {
-                        if (options.TreatExtraAsText)
-                            extra = encoding.GetBytes(extraStr);
-                        else
-                            extra = Convert.FromBase64String(extraStr);
-                    }
+                    byte[] extra = ExtraDataHelper.Decode(extraStr);
 
                     csf.AddLabel(label, value, extra);
                 }
@@ -121,7 +114,7 @@ namespace SadPencil.Ra2CsfFile
             if (csf == null) throw new ArgumentNullException(nameof(csf));
             if (stream == null) throw new ArgumentNullException(nameof(stream));
 
-            encoding = encoding ?? Encoding.UTF8;
+            encoding = encoding ?? Encoding.Default;
 
             using (var writer = new StreamWriter(stream, encoding, 1024))
             {
@@ -151,14 +144,7 @@ namespace SadPencil.Ra2CsfFile
                     string escapedValue = EscapeCsvField(labelValue ?? "", delimiter);
 
                     byte[] extra = csf.GetExtra(labelName);
-                    string extraStr = "";
-                    if (extra != null)
-                    {
-                        if (csf.Options.TreatExtraAsText)
-                            extraStr = encoding.GetString(extra);
-                        else
-                            extraStr = Convert.ToBase64String(extra);
-                    }
+                    string extraStr = ExtraDataHelper.Encode(extra) ?? "";
                     string escapedExtra = EscapeCsvField(extraStr, delimiter);
 
                     writer.WriteLine($"{escapedLabel}{delimiter}{escapedValue}{delimiter}{escapedExtra}");

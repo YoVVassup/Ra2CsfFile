@@ -69,6 +69,7 @@
         <Compile Include="CsfLang.cs" />
         <Compile Include="CsfLangHelper.cs" />
         <Compile Include="Encoding1252Workaround.cs" />
+        <Compile Include="ExtraDataHelper.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
 

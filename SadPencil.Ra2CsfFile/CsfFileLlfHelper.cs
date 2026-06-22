@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -152,18 +152,10 @@ namespace SadPencil.Ra2CsfFile
                         }
                         else
                         {
-                            // End of multi-line value - save current entry
                             string validCurrentKey = ConvertToValidLabelName(currentKey);
                             if (!string.IsNullOrEmpty(validCurrentKey))
                             {
-                                byte[] extra = null;
-                                if (!string.IsNullOrEmpty(currentExtra))
-                                {
-                                    if (options.TreatExtraAsText)
-                                        extra = Encoding.UTF8.GetBytes(currentExtra);
-                                    else
-                                        extra = Convert.FromBase64String(currentExtra);
-                                }
+                                byte[] extra = ExtraDataHelper.Decode(currentExtra);
                                 csf.AddLabel(validCurrentKey, currentValue.ToString().Trim(), extra);
                             }
                             
@@ -186,14 +178,7 @@ namespace SadPencil.Ra2CsfFile
                                     string validNewKey = ConvertToValidLabelName(currentKey);
                                     if (!string.IsNullOrEmpty(validNewKey))
                                     {
-                                        byte[] extra = null;
-                                        if (!string.IsNullOrEmpty(currentExtra))
-                                        {
-                                            if (options.TreatExtraAsText)
-                                                extra = Encoding.UTF8.GetBytes(currentExtra);
-                                            else
-                                                extra = Convert.FromBase64String(currentExtra);
-                                        }
+                                        byte[] extra = ExtraDataHelper.Decode(currentExtra);
                                         csf.AddLabel(validNewKey, currentValue.ToString(), extra);
                                     }
                                     currentKey = null;
@@ -211,14 +196,7 @@ namespace SadPencil.Ra2CsfFile
                         string validCurrentKey = ConvertToValidLabelName(currentKey);
                         if (!string.IsNullOrEmpty(validCurrentKey))
                         {
-                            byte[] extra = null;
-                            if (!string.IsNullOrEmpty(currentExtra))
-                            {
-                                if (options.TreatExtraAsText)
-                                    extra = Encoding.UTF8.GetBytes(currentExtra);
-                                else
-                                    extra = Convert.FromBase64String(currentExtra);
-                            }
+                            byte[] extra = ExtraDataHelper.Decode(currentExtra);
                             csf.AddLabel(validCurrentKey, currentValue.ToString().Trim(), extra);
                         }
                         currentKey = null;
@@ -243,14 +221,7 @@ namespace SadPencil.Ra2CsfFile
                             string validCurrentKey = ConvertToValidLabelName(currentKey);
                             if (!string.IsNullOrEmpty(validCurrentKey))
                             {
-                                byte[] extra = null;
-                                if (!string.IsNullOrEmpty(currentExtra))
-                                {
-                                    if (options.TreatExtraAsText)
-                                        extra = Encoding.UTF8.GetBytes(currentExtra);
-                                    else
-                                        extra = Convert.FromBase64String(currentExtra);
-                                }
+                                byte[] extra = ExtraDataHelper.Decode(currentExtra);
                                 csf.AddLabel(validCurrentKey, currentValue.ToString(), extra);
                             }
                             currentKey = null;
@@ -266,14 +237,7 @@ namespace SadPencil.Ra2CsfFile
                     string validCurrentKey = ConvertToValidLabelName(currentKey);
                     if (!string.IsNullOrEmpty(validCurrentKey))
                     {
-                        byte[] extra = null;
-                        if (!string.IsNullOrEmpty(currentExtra))
-                        {
-                            if (options.TreatExtraAsText)
-                                extra = Encoding.UTF8.GetBytes(currentExtra);
-                            else
-                                extra = Convert.FromBase64String(currentExtra);
-                        }
+                        byte[] extra = ExtraDataHelper.Decode(currentExtra);
                         csf.AddLabel(validCurrentKey, currentValue.ToString().Trim(), extra);
                     }
                 }
@@ -314,11 +278,7 @@ namespace SadPencil.Ra2CsfFile
                     byte[] extra = csf.GetExtra(labelName);
                     if (extra != null)
                     {
-                        string extraStr;
-                        if (csf.Options.TreatExtraAsText)
-                            extraStr = Encoding.UTF8.GetString(extra);
-                        else
-                            extraStr = Convert.ToBase64String(extra);
+                        string extraStr = ExtraDataHelper.Encode(extra);
                         sw.WriteLine($"# extra: {extraStr}");
                     }
 

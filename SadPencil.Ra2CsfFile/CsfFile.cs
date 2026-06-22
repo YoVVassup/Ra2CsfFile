@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -291,7 +290,7 @@ namespace SadPencil.Ra2CsfFile
                     csf.Version = br.ReadInt32();
                     int labelsNum = br.ReadInt32();
                     int stringsNum = br.ReadInt32();
-                    _ = br.ReadInt32();
+                    _ = br.ReadInt32(); // unused DWORD at offset 0x10 (per CSF format spec)
                     csf.Language = CsfLangHelper.GetCsfLang(br.ReadInt32());
 
                     for (int iLabel = 0; iLabel < labelsNum; iLabel++)
@@ -456,6 +455,47 @@ namespace SadPencil.Ra2CsfFile
                 stream.Position = originalPosition;
                 throw new IOException("Error writing CSF file.", ex);
             }
+        }
+
+        /// <summary>
+        /// Validates lengths of label name, value, and extra value for CSF format compliance.
+        /// Returns a list of warnings. Empty list means all OK.
+        /// CSF format uses DWORD (int32) for lengths, so max is ~2 billion.
+        /// Warning thresholds are set to practical limits.
+        /// </summary>
+        public List<string> ValidateLengths()
+        {
+            var warnings = new List<string>();
+            const int MaxLabelNameBytes = 65536;       // 64 KB warning threshold
+            const int MaxValueChars = 1048576;          // 1M chars warning threshold
+            const int MaxExtraBytes = 65536;            // 64 KB warning threshold
+
+            foreach (var labelName in _labels.Keys)
+            {
+                byte[] labelNameBytes = Encoding.ASCII.GetBytes(labelName);
+                if (labelNameBytes.Length > MaxLabelNameBytes)
+                    warnings.Add($"Label name '{TruncateLabelName(labelName)}' exceeds {MaxLabelNameBytes} bytes ({labelNameBytes.Length} bytes)");
+
+                if (_labels.TryGetValue(labelName, out string value))
+                {
+                    if (value != null && value.Length > MaxValueChars)
+                        warnings.Add($"Value for '{TruncateLabelName(labelName)}' exceeds {MaxValueChars} chars ({value.Length} chars)");
+                }
+
+                if (_extra.TryGetValue(labelName, out byte[] extra))
+                {
+                    if (extra != null && extra.Length > MaxExtraBytes)
+                        warnings.Add($"Extra value for '{TruncateLabelName(labelName)}' exceeds {MaxExtraBytes} bytes ({extra.Length} bytes)");
+                }
+            }
+
+            return warnings;
+        }
+
+        private static string TruncateLabelName(string name, int maxLen = 50)
+        {
+            if (name == null) return "(null)";
+            return name.Length <= maxLen ? name : name.Substring(0, maxLen) + "...";
         }
 
         #endregion

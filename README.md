@@ -5,7 +5,7 @@
 [![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**CsfStudio** is a powerful command‑line tool for working with **Red Alert 2** and **Yuri's Revenge** string table files (`.csf`). It supports **bidirectional conversion** between multiple formats, **set operations** on label collections, **map label checking**, **translation helpers**, and **encoding fixes**.
+**CsfStudio** is a command‑line tool for working with **Red Alert 2** and **Yuri's Revenge** string table files (`.csf`). It supports **bidirectional conversion** between multiple formats, **set operations** on label collections, **map label checking**, **translation helpers**, and **encoding fixes**.
 
 ---
 
@@ -13,27 +13,30 @@
 
 - 🔄 **Format conversion** – CSF ↔ INI / JSON / YAML / LLF / TXT / Excel (XLSX/XLS) / CSV
 - 🧩 **Set operations** – union, subtraction, intersection, symmetric difference, case override
+- 🔍 **Diff & compare** – full diff and short stat between two CSF files
+- 📋 **Search & export** – find labels by pattern, export label lists
 - 🗺️ **Map label check** – scan `.map`, `.mpr`, `.yrm` files to find missing labels in CSF
-- 🌍 **Translation helpers** – generate translation templates, side‑by‑side comparisons, update helpers
-- 🔠 **Encoding fix** – reinterpret CSF text using a different codepage (e.g. Windows‑1251, GB18030)
+- 🌍 **Translation helpers** – generate translation templates, side-by-side comparisons, update helpers
+- 🔠 **Encoding fix** – reinterpret CSF text using a different codepage (e.g. Windows-1251, GB18030)
+- 📦 **Batch processing** – process all files in a folder at once
 - 🧠 **Preserves extra data (WRTS)** – all operations keep the optional binary block
 - 📝 **Label ordering** – maintain original order or sort alphabetically (`--order-by-key`)
-- 🧹 **CSV flexibility** – supports custom delimiters and `sep=` line for Excel compatibility
+- 👁️ **Dry-run mode** – preview output without writing files
 
 ---
 
 ## Supported Formats
 
 | Format | Read | Write | Extra data | Metadata | Multi‑line |
-|--------|------|-------|------------|----------|-------------|
+|--------|------|-------|------------|----------|------------|
 | CSF (binary) | ✅ | ✅ | ✅ (WRTS) | ✅ (version, language) | ✅ |
-| INI | ✅ | ✅ | ✅ (Base64 or text) | ✅ | ✅ |
-| JSON | ✅ | ✅ | ✅ (Base64 or text) | ✅ | ✅ |
-| YAML | ✅ | ✅ | ✅ (Base64 or text) | ✅ | ✅ (literal) |
+| INI | ✅ | ✅ | ✅ (text) | ✅ | ✅ |
+| JSON | ✅ | ✅ | ✅ (text) | ✅ | ✅ |
+| YAML | ✅ | ✅ | ✅ (text) | ✅ | ✅ (literal) |
 | LLF | ✅ | ✅ | ✅ (comment) | ✅ (comments) | ✅ |
 | TXT (CSFTool) | ✅ | ✅ | ✅ (`!extra\|`) | ✅ (`!metadata\|`) | ✅ (escaped) |
-| Excel (XLSX/XLS) | ✅ | ✅ | ✅ (text/Base64) | ✅ (separate sheet) | ✅ |
-| CSV | ✅ | ✅ | ✅ (text/Base64) | ✅ (`#version=`) | ✅ (RFC 4180) |
+| Excel (XLSX/XLS) | ✅ | ✅ | ✅ (text) | ✅ (separate sheet) | ✅ |
+| CSV | ✅ | ✅ | ✅ (text) | ✅ (`#version=`) | ✅ (RFC 4180) |
 
 > All conversions preserve **label order** (original or sorted) and **extra data** (WRTS) where applicable.
 
@@ -48,160 +51,223 @@
 ### Build from source
 ```bash
 git clone https://github.com/YoVVassup/Ra2CsfFile.git
-cd Ra2CsfFile/CsfStudio
-nuget restore
-msbuild /p:Configuration=Release
+cd Ra2CsfFile
+nuget restore SadPencil.Ra2CsfFile.sln
+msbuild SadPencil.Ra2CsfFile.sln /p:Configuration=Release
 ```
 
-The executable `CsfStudio.exe` will be placed in `bin\Release\`. All dependencies (NPOI, YamlDotNet, Newtonsoft.Json, etc.) are embedded using **Costura.Fody** – no extra DLLs required.
+The executable `CsfStudio.exe` will be placed in `CsfStudio\bin\Release\`. All dependencies (NPOI, YamlDotNet, Newtonsoft.Json, etc.) are embedded using **Costura.Fody** – no extra DLLs required.
 
 ---
 
-## Command Line Usage
+## Quick Start
+
+```bash
+# View file statistics
+CsfStudio.exe -i stringtable01.csf --stats
+
+# Convert CSF to INI
+CsfStudio.exe -i stringtable01.csf -o stringtable01.ini --to-ini
+
+# Compare two files
+CsfStudio.exe -i old.csf,new.csf --diff
+
+# Search for labels
+CsfStudio.exe -i stringtable01.csf --search "Soviet"
+
+# Validate a file
+CsfStudio.exe -i stringtable01.csf --validate
+```
+
+---
+
+## Command Line Reference
 
 ### Basic syntax
 ```text
 CsfStudio.exe -i <input> [-i <input2> ...] -o <output> --<operation> [options]
 ```
 
-### Global options
-| Option | Description |
-|--------|-------------|
-| `-i, --input <file>` | Input file path (comma‑separated for multiple) |
-| `-o, --output <file>` | Output file path |
-| `--extra-mode text\|base64` | How to store extra data in text formats (default: `text`) |
-| `--csv-delimiter <delim>` | CSV delimiter: `auto`, `comma`, `semicolon`, `tab`, `pipe`, `space` |
-| `--order-by-key` | Sort labels alphabetically (case‑insensitive) when saving |
-| `--diff-placeholder <text>` | Placeholder for differing values in intersection (default: `TODO_Different_Value`) |
-| `-h, --help` | Show detailed help |
-
 ---
 
-## Format Conversion
+### Format Conversion
 
-Convert a single file from one format to another. The output format is determined by the file extension of `-o`.
+Convert a single file from one format to another.
 
-### Commands
-- `--to-csf`   → save as `.csf`
-- `--to-ini`   → save as `.ini`
-- `--to-json`  → save as `.json`
-- `--to-yaml`  → save as `.yaml`
-- `--to-llf`   → save as `.llf`
-- `--to-txt`   → save as `.txt` (CSFTool format)
-- `--to-excel` → save as `.xlsx` or `.xls`
-- `--to-csv`   → save as `.csv`
+| Command | Output format |
+|---------|---------------|
+| `--to-csf` | `.csf` (binary game format) |
+| `--to-ini` | `.ini` (human-readable) |
+| `--to-json` | `.json` |
+| `--to-yaml` | `.yaml` |
+| `--to-llf` | `.llf` (Label Language File) |
+| `--to-txt` | `.txt` (CSFTool format) |
+| `--to-excel` | `.xlsx` or `.xls` |
+| `--to-csv` | `.csv` |
 
-### Examples
 ```bash
-# CSF → INI
 CsfStudio.exe -i stringtable01.csf -o stringtable01.ini --to-ini
-
-# INI → Excel
 CsfStudio.exe -i stringtable01.ini -o stringtable01.xlsx --to-excel
-
-# CSV → CSF (with semicolon delimiter)
 CsfStudio.exe -i stringtable01.csv -o stringtable01.csf --to-csf --csv-delimiter semicolon
+CsfStudio.exe -i stringtable01.csf -o output.json --to-json --dry-run
 ```
 
 ---
 
-## Set Operations (two or more input files)
+### Set Operations
+
+Operations that combine or compare two or more input files.
 
 | Command | Description |
 |---------|-------------|
 | `--merge` | Union: all labels from all files |
 | `--subtract` | A minus B: labels in first but not in others |
-| `--intersection` | Labels present in **all** files; differing values replaced with `--diff-placeholder` |
-| `--symmetric-difference` | Labels present in exactly **one** file (values must be consistent) |
+| `--intersection` | Labels present in all files; differing values replaced with `--diff-placeholder` |
+| `--symmetric-difference` | Labels present in exactly one file (values must match) |
 | `--override-case` | Keep values from current file, but use label case from upstream file |
 
-### Examples
 ```bash
-# Union
-CsfStudio.exe -i stringtable01.csf,stringtable02.csf -o stringtable_merged.csf --merge
-
-# Intersection (with custom placeholder)
-CsfStudio.exe -i stringtable01.csf,stringtable02.csf -o stringtable_common.csf --intersection --diff-placeholder "DIFFERENT"
-
-# Override case
-CsfStudio.exe -i stringtable_upstream.csf,stringtable_current.csf -o stringtable_fixed.csf --override-case
+CsfStudio.exe -i stringtable01.csf,stringtable02.csf -o merged.csf --merge
+CsfStudio.exe -i stringtable01.csf,stringtable02.csf -o common.csf --intersection
+CsfStudio.exe -i upstream.csf,current.csf -o fixed.csf --override-case
+CsfStudio.exe -i old.csf,new.csf -o merged.csf --merge --merge-strategy last-wins
 ```
 
 ---
 
-## Map Label Check
+### Diff & Compare
 
-Scan map files (`.map`, `.mpr`, `.yrm`) and list all labels that are used in maps but missing from the given CSF.
+| Command | Description |
+|---------|-------------|
+| `--diff` | Full diff: show all added, removed, and changed labels |
+| `--diff-stat` | Short summary: counts of added/removed/changed/unchanged |
 
 ```bash
+CsfStudio.exe -i old.csf,new.csf --diff
+CsfStudio.exe -i old.csf,new.csf -o diff_report.txt --diff
+CsfStudio.exe -i old.csf,new.csf --diff-stat
+```
+
+---
+
+### Search & Export
+
+| Command | Description |
+|---------|-------------|
+| `--search <pattern>` | Find labels by substring (case-insensitive) |
+| `--search regex:<pattern>` | Find labels by regular expression |
+| `--export-labels` | Export sorted list of all label names |
+
+```bash
+CsfStudio.exe -i stringtable01.csf --search "Soviet"
+CsfStudio.exe -i stringtable01.csf --search "regex:^UI:" -o matches.txt
+CsfStudio.exe -i stringtable01.csf --export-labels -o labels.txt
+```
+
+---
+
+### Info & Validation
+
+| Command | Description |
+|---------|-------------|
+| `--stats` | Show file statistics (count, size, language, version) |
+| `--validate` | Validate file for errors (exit code: 0=ok, 1=errors, 2=warnings) |
+
+```bash
+CsfStudio.exe -i stringtable01.csf --stats
+CsfStudio.exe -i stringtable01.csf --validate
+```
+
+---
+
+### Map Label Check
+
+Scan map files (`.map`, `.mpr`, `.yrm`) and list all labels used in maps but missing from the CSF.
+
+```bash
+CsfStudio.exe -i ra2md.csf --check-maps --map-folder "C:\RA2\Maps"
 CsfStudio.exe -i ra2md.csf --check-maps --map-folder "C:\RA2\Maps" -o missing_labels.txt
 ```
 
-If `-o` is omitted, the missing labels are printed to the console.
-
 ---
 
-## Translation Helpers
+### Translation Helpers
 
-| Command | Description | Input count | Output |
-|---------|-------------|-------------|--------|
-| `--translation-new` | Create translation template (all values replaced with placeholder) | 1 (upstream) | any format |
-| `--translation-tile` | Side‑by‑side comparison (UpstreamLine / TranslatedLine) | 2 (upstream, translated) | only `.ini` |
-| `--translation-update` | Update translation after upstream changes | 3 (old_upstream, new_upstream, old_translated) | any format |
-| `--translation-override` | Merge: use translated if exists, otherwise upstream | 2 (upstream, translated) | any format |
+| Command | Description | Inputs |
+|---------|-------------|--------|
+| `--translation-new` | Create translation template | 1 (upstream) |
+| `--translation-tile` | Side-by-side comparison | 2 (upstream, translated) |
+| `--translation-update` | Update translation after upstream changes | 3 (old_upstream, new_upstream, old_translated) |
+| `--translation-override` | Merge: use translated if exists, otherwise upstream | 2 (upstream, translated) |
 
-### Options
-- `--translation-placeholder <text>` – placeholder for missing translations (default: `TODO_Translation_Needed`)
-- `--translation-delete-placeholder <text>` – placeholder for labels removed in new upstream (default: `TODO_Translation_Delete_Needed`)
-
-### Examples
 ```bash
-# Create new translation template
-CsfStudio.exe -i stringtable_upstream.csf -o stringtable_trans.ini --translation-new
-
-# Side‑by‑side comparison (INI only)
-CsfStudio.exe -i stringtable_upstream.csf,stringtable_translated.csf -o stringtable_compare.ini --translation-tile
-
-# Update translation after upstream changes
-CsfStudio.exe -i stringtable_old_up.csf,stringtable_new_up.csf,stringtable_old_trans.csf -o stringtable_update.ini --translation-update
-
-# Override: prefer translated value
-CsfStudio.exe -i stringtable_upstream.csf,stringtable_translated.csf -o stringtable_merged.csf --translation-override
+CsfStudio.exe -i upstream.csf -o template.ini --translation-new
+CsfStudio.exe -i upstream.csf,translated.csf -o compare.ini --translation-tile
+CsfStudio.exe -i old_up.csf,new_up.csf,old_trans.csf -o updated.ini --translation-update
+CsfStudio.exe -i upstream.csf,translated.csf -o merged.csf --translation-override
 ```
 
 ---
 
-## Encoding Fix
+### Encoding Fix
 
-Reinterpret the string values of a CSF file using a different source encoding. Useful when a CSF was saved with a legacy codepage (e.g., Windows‑1251 for Cyrillic, GB18030 for Chinese).
+Reinterpret CSF text using a different codepage.
 
 ```bash
-CsfStudio.exe -i stringtable_broken.csf -o stringtable_fixed.csf --fix-encoding windows-1251
+CsfStudio.exe -i broken.csf -o fixed.csf --fix-encoding windows-1251
+CsfStudio.exe -i broken.csf -o fixed.csf --fix-encoding gb18030
 ```
 
-### Supported encodings
-- `gb18030`, `gb2312` – Chinese
-- `windows-1251` – Cyrillic
-- `windows-1252` – Western European
-- `iso-8859-1` – Latin‑1
-- `utf-8`, `unicode` (UTF‑16)
+Supported encodings: `gb18030`, `gb2312`, `windows-1251`, `windows-1252`, `iso-8859-1`, `utf-8`, `unicode`
+
+---
+
+### Batch Processing
+
+Process all supported files in a folder at once.
+
+```bash
+CsfStudio.exe --batch --batch-folder "C:\RA2\Strings" --to-json
+CsfStudio.exe --batch --batch-folder "C:\RA2\Strings" --output-folder "C:\Output" --to-ini
+CsfStudio.exe --batch --batch-folder "C:\RA2\Strings" --to-csv --recursive
+```
+
+---
+
+### General Options
+
+| Option | Description |
+|--------|-------------|
+| `-i, --input <file>` | Input file(s), comma-separated for multiple |
+| `-o, --output <file>` | Output file path |
+| `--csv-delimiter <delim>` | CSV delimiter: `auto`, `comma`, `semicolon`, `tab`, `pipe`, `space` |
+| `--order-by-key` | Sort labels alphabetically when saving |
+| `--diff-placeholder <text>` | Placeholder for differing values (default: `TODO_Different_Value`) |
+| `--merge-strategy <strategy>` | Conflict resolution: `first-wins` (default), `last-wins`, `error` |
+| `--dry-run` | Preview output without writing files |
+| `--force` | Overwrite existing output file without prompt |
+| `--output-encoding <enc>` | Output encoding: `utf-8` (default), `ascii`, `unicode` |
+| `--quiet` | Suppress non-essential output |
+| `--verbose` | Show additional information |
+| `--recursive` | Include subfolders in batch processing |
+| `-h, --help` | Show help |
 
 ---
 
 ## Notes
 
 - Extra data (WRTS) is **preserved** in all operations.
-- Use `--extra-mode base64` to store extra data as Base64 in text formats (INI, JSON, YAML, TXT, LLF).
-- `--translation-tile` only supports `.ini` output because it adds custom keys (`UpstreamLineN`, `TranslatedLineN`).
-- When using `--translation-update`, labels that were removed in the new upstream receive a `_DELETE` suffix.
-- Map label check parses `UIName` in any section, `Actions` (action types 11/103 with parameter 4), and the `Ranking` section.
+- Extra data is stored as UTF-8 text in all text formats.
+- `--translation-tile` supports `.ini`, `.json`, `.yaml`, `.csv`, `.xlsx` output.
+- When using `--translation-update`, removed labels get a `_DELETE` suffix.
+- Map label check parses `UIName`, `Actions` (types 11/103), and `Ranking` section.
 
 ---
 
 ## License
 
-MIT License – see [LICENSE](https://github.com/YoVVassup/Ra2CsfFile/blob/main/LICENSE) file for details.
+MIT License – see [LICENSE](https://github.com/YoVVassup/Ra2CsfFile/blob/main/LICENSE) for details.
 
----
+### Acknowledgements
 
-**CsfStudio** – your complete tool for Red Alert 2 string table manipulation.
+- **TXT format** (CSFTool format) is based on [CSFTool](https://github.com/Starkku/CSFTool) by Starkku, licensed under [GPL-3.0](https://github.com/Starkku/CSFTool/blob/master/LICENSE.txt).

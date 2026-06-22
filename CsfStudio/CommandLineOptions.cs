@@ -31,6 +31,22 @@ namespace CsfStudio
         public bool Intersection { get; set; }
         public bool SymmetricDifference { get; set; }
         public bool OverrideCase { get; set; }
+        public bool Diff { get; set; }
+        public bool Stats { get; set; }
+        public bool Validate { get; set; }
+        public bool Batch { get; set; }
+        public string BatchFolder { get; set; }
+        public string OutputFolder { get; set; }
+        public string MergeStrategy { get; set; } = "first-wins";
+        public bool DryRun { get; set; }
+        public string SearchPattern { get; set; }
+        public bool ExportLabels { get; set; }
+        public bool DiffStat { get; set; }
+        public string OutputEncoding { get; set; }
+        public bool Force { get; set; }
+        public bool Recursive { get; set; }
+        public bool Quiet { get; set; }
+        public bool Verbose { get; set; }
         
         // Map check
         public bool CheckMaps { get; set; }
@@ -47,9 +63,6 @@ namespace CsfStudio
         // Encoding fix
         public string FixEncoding { get; set; }
         
-        // Extra data mode
-        public string ExtraMode { get; set; } = "text";
-        
         // CSV delimiter
         public string CsvDelimiter { get; set; } = "auto";
         
@@ -59,7 +72,6 @@ namespace CsfStudio
         // Placeholder for intersection diff
         public string DiffPlaceholder { get; set; } = "TODO_Different_Value";
         
-        public bool TreatExtraAsText => ExtraMode == "text";
         public bool ShowHelp { get; set; }
 
         public static CommandLineOptions Parse(string[] args)
@@ -99,6 +111,42 @@ namespace CsfStudio
                     case "--intersection": options.Intersection = true; break;
                     case "--symmetric-difference": options.SymmetricDifference = true; break;
                     case "--override-case": options.OverrideCase = true; break;
+                    case "--diff": options.Diff = true; break;
+                    case "--stats": options.Stats = true; break;
+                    case "--validate": options.Validate = true; break;
+
+                    case "--batch": options.Batch = true; break;
+                    case "--batch-folder":
+                        if (arguments.Count == 0) throw new ArgumentException("Missing batch folder path");
+                        options.BatchFolder = arguments.Dequeue();
+                        break;
+                    case "--output-folder":
+                        if (arguments.Count == 0) throw new ArgumentException("Missing output folder path");
+                        options.OutputFolder = arguments.Dequeue();
+                        break;
+                    case "--merge-strategy":
+                        if (arguments.Count == 0) throw new ArgumentException("Missing merge strategy");
+                        string strategy = arguments.Dequeue().ToLower();
+                        if (strategy != "first-wins" && strategy != "last-wins" && strategy != "error")
+                            throw new ArgumentException("Merge strategy must be: first-wins, last-wins, or error");
+                        options.MergeStrategy = strategy;
+                        break;
+                    case "--dry-run": options.DryRun = true; break;
+
+                    case "--search":
+                        if (arguments.Count == 0) throw new ArgumentException("Missing search pattern");
+                        options.SearchPattern = arguments.Dequeue();
+                        break;
+                    case "--export-labels": options.ExportLabels = true; break;
+                    case "--diff-stat": options.DiffStat = true; break;
+                    case "--output-encoding":
+                        if (arguments.Count == 0) throw new ArgumentException("Missing output encoding");
+                        options.OutputEncoding = arguments.Dequeue();
+                        break;
+                    case "--force": options.Force = true; break;
+                    case "--recursive": options.Recursive = true; break;
+                    case "--quiet": options.Quiet = true; break;
+                    case "--verbose": options.Verbose = true; break;
 
                     case "--check-maps": options.CheckMaps = true; break;
                     case "--map-folder":
@@ -122,14 +170,6 @@ namespace CsfStudio
                     case "--fix-encoding":
                         if (arguments.Count == 0) throw new ArgumentException("Missing encoding specification");
                         options.FixEncoding = arguments.Dequeue();
-                        break;
-
-                    case "--extra-mode":
-                        if (arguments.Count == 0) throw new ArgumentException("Missing extra mode (text/base64)");
-                        string mode = arguments.Dequeue().ToLower();
-                        if (mode != "text" && mode != "base64")
-                            throw new ArgumentException("Extra mode must be 'text' or 'base64'");
-                        options.ExtraMode = mode;
                         break;
 
                     case "--csv-delimiter":
@@ -159,7 +199,7 @@ namespace CsfStudio
             // Validation
             if (!options.ShowHelp)
             {
-                if (options.InputFiles.Count == 0)
+                if (options.InputFiles.Count == 0 && !options.Batch)
                     throw new ArgumentException("Input file is required");
 
                 // Translation operations require specific number of inputs
@@ -198,16 +238,54 @@ namespace CsfStudio
                     if (string.IsNullOrEmpty(options.MapFolder))
                         throw new ArgumentException("--map-folder is required for --check-maps");
                 }
+                else if (options.Diff)
+                {
+                    if (options.InputFiles.Count != 2)
+                        throw new ArgumentException("--diff requires exactly two input files (old, new)");
+                }
+                else if (options.Stats)
+                {
+                    if (options.InputFiles.Count != 1)
+                        throw new ArgumentException("--stats requires exactly one input file");
+                }
+                else if (options.Validate)
+                {
+                    if (options.InputFiles.Count != 1)
+                        throw new ArgumentException("--validate requires exactly one input file");
+                }
+                else if (options.Batch)
+                {
+                    if (string.IsNullOrEmpty(options.BatchFolder))
+                        throw new ArgumentException("--batch requires --batch-folder");
+                    if (!options.ToIni && !options.ToCsf && !options.ToJson && !options.ToYaml && !options.ToLlf && !options.ToTxt && !options.ToExcel && !options.ToCsv)
+                        throw new ArgumentException("--batch requires a conversion operation (--to-ini, --to-csf, etc.)");
+                }
+                else if (!string.IsNullOrEmpty(options.SearchPattern))
+                {
+                    if (options.InputFiles.Count != 1)
+                        throw new ArgumentException("--search requires exactly one input file");
+                }
+                else if (options.ExportLabels)
+                {
+                    if (options.InputFiles.Count != 1)
+                        throw new ArgumentException("--export-labels requires exactly one input file");
+                }
+                else if (options.DiffStat)
+                {
+                    if (options.InputFiles.Count != 2)
+                        throw new ArgumentException("--diff-stat requires exactly two input files (old, new)");
+                }
                 else
                 {
                     // Output file required for conversions
-                    if (string.IsNullOrEmpty(options.OutputFile) && !options.Merge && !options.Subtract && !options.Intersection && !options.SymmetricDifference && !options.OverrideCase)
+                    bool needsOutput = !options.Merge && !options.Subtract && !options.Intersection && !options.SymmetricDifference && !options.OverrideCase && !options.Diff && !options.DiffStat && !options.Stats && !options.Validate && string.IsNullOrEmpty(options.SearchPattern) && !options.ExportLabels;
+                    if (string.IsNullOrEmpty(options.OutputFile) && needsOutput)
                         throw new ArgumentException("Output file is required");
                 }
 
                 // Set operations input count
                 int requiredInputCount = (options.Merge || options.Subtract || options.Intersection || options.SymmetricDifference || options.OverrideCase) ? 2 : 1;
-                if (!options.TranslationNew && !options.TranslationTile && !options.TranslationUpdate && !options.TranslationOverride && !options.CheckMaps && options.InputFiles.Count < requiredInputCount)
+                if (!options.TranslationNew && !options.TranslationTile && !options.TranslationUpdate && !options.TranslationOverride && !options.CheckMaps && !options.Diff && !options.Stats && !options.Validate && !options.Batch && !options.ExportLabels && !options.DiffStat && string.IsNullOrEmpty(options.SearchPattern) && options.InputFiles.Count < requiredInputCount)
                     throw new ArgumentException($"Need at least {requiredInputCount} input file(s) for this operation");
 
                 // Only one operation allowed
@@ -215,7 +293,8 @@ namespace CsfStudio
                               (options.SymmetricDifference ? 1 : 0) + (options.OverrideCase ? 1 : 0) +
                               (options.CheckMaps ? 1 : 0) + (options.TranslationNew ? 1 : 0) +
                               (options.TranslationTile ? 1 : 0) + (options.TranslationUpdate ? 1 : 0) +
-                              (options.TranslationOverride ? 1 : 0);
+                              (options.TranslationOverride ? 1 : 0) + (options.Diff ? 1 : 0) + (options.Stats ? 1 : 0) + (options.Validate ? 1 : 0) + (options.Batch ? 1 : 0) +
+                              (!string.IsNullOrEmpty(options.SearchPattern) ? 1 : 0) + (options.ExportLabels ? 1 : 0) + (options.DiffStat ? 1 : 0);
                 if (opCount > 1)
                     throw new ArgumentException("Only one operation can be specified");
             }
