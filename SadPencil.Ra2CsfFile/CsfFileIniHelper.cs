@@ -1,4 +1,4 @@
-﻿using IniParser.Model;
+using IniParser.Model;
 using IniParser.Model.Configuration;
 using IniParser.Parser;
 using System;
@@ -115,19 +115,7 @@ namespace SadPencil.Ra2CsfFile
                 {
                     string labelValue = string.Join(CsfFile.LineBreakCharacters, valueParts);
                     
-                    // Read extra data if present
-                    byte[] extra = null;
-                    if (key.ContainsKey("Extra"))
-                    {
-                        string extraStr = key["Extra"];
-                        if (!string.IsNullOrEmpty(extraStr))
-                        {
-                            if (options.TreatExtraAsText)
-                                extra = Encoding.UTF8.GetBytes(extraStr);
-                            else
-                                extra = Convert.FromBase64String(extraStr);
-                        }
-                    }
+                    byte[] extra = ExtraDataHelper.Decode(key.ContainsKey("Extra") ? key["Extra"] : null);
                     
                     csf.AddLabel(labelName, labelValue, extra);
                 }
@@ -186,12 +174,7 @@ namespace SadPencil.Ra2CsfFile
                 byte[] extra = csf.GetExtra(labelName);
                 if (extra != null)
                 {
-                    string extraStr;
-                    if (csf.Options.TreatExtraAsText)
-                        extraStr = Encoding.UTF8.GetString(extra);
-                    else
-                        extraStr = Convert.ToBase64String(extra);
-                    labelSection.AddKey("Extra", extraStr);
+                    labelSection.AddKey("Extra", ExtraDataHelper.Encode(extra));
                 }
 
                 // Add trimmable line warning comment if needed

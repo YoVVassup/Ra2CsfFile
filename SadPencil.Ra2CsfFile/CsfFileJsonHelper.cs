@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -66,19 +66,7 @@ namespace SadPencil.Ra2CsfFile
                     {
                         string labelName = labelPair.Key;
                         string labelValue = labelPair.Value?.Value ?? "";
-                        string extraStr = labelPair.Value?.Extra;
-
-                        if (!CsfFile.ValidateLabelName(labelName))
-                            throw new InvalidDataException($"Invalid label name '{labelName}' in JSON.");
-
-                        byte[] extra = null;
-                        if (!string.IsNullOrEmpty(extraStr))
-                        {
-                            if (options.TreatExtraAsText)
-                                extra = Encoding.UTF8.GetBytes(extraStr);
-                            else
-                                extra = Convert.FromBase64String(extraStr);
-                        }
+                        byte[] extra = ExtraDataHelper.Decode(labelPair.Value?.Extra);
 
                         csf.AddLabel(labelName, labelValue, extra);
                     }
@@ -127,10 +115,7 @@ namespace SadPencil.Ra2CsfFile
                 byte[] extra = csf.GetExtra(labelName);
                 if (extra != null)
                 {
-                    if (csf.Options.TreatExtraAsText)
-                        jsonLabel.Extra = Encoding.UTF8.GetString(extra);
-                    else
-                        jsonLabel.Extra = Convert.ToBase64String(extra);
+                    jsonLabel.Extra = ExtraDataHelper.Encode(extra);
                 }
 
                 model.Labels.Add(labelName, jsonLabel);

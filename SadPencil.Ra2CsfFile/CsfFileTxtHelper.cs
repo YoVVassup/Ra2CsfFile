@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 
@@ -6,6 +6,7 @@ namespace SadPencil.Ra2CsfFile
 {
     /// <summary>
     /// Helper class for working with TXT files in CSFTool format representing CSF string tables.
+    /// The TXT format is based on CSFTool by Starkku (https://github.com/Starkku/CSFTool), licensed under GPL-3.0.
     /// Supports extra data (WRTS) as a Base64-encoded string or plain text using a custom prefix.
     /// Supports metadata via lines starting with "!metadata|key|value".
     /// Supports label ordering via CsfFileOptions.OrderByKey.
@@ -98,11 +99,7 @@ namespace SadPencil.Ra2CsfFile
                     string extraDataStr = extraLine.Substring(idx + LabelSeparator.Length);
                     if (CsfFile.ValidateLabelName(extraLabel))
                     {
-                        byte[] extra;
-                        if (options.TreatExtraAsText)
-                            extra = Encoding.UTF8.GetBytes(extraDataStr);
-                        else
-                            extra = Convert.FromBase64String(extraDataStr);
+                        byte[] extra = ExtraDataHelper.Decode(extraDataStr);
                         csf.SetExtra(extraLabel, extra);
                     }
                 }
@@ -168,11 +165,7 @@ namespace SadPencil.Ra2CsfFile
                         byte[] extra = csf.GetExtra(labelName);
                         if (extra != null)
                         {
-                            string extraStr;
-                            if (csf.Options.TreatExtraAsText)
-                                extraStr = Encoding.UTF8.GetString(extra);
-                            else
-                                extraStr = Convert.ToBase64String(extra);
+                            string extraStr = ExtraDataHelper.Encode(extra);
                             sw.WriteLine($"{ExtraPrefix}{labelUpper}{LabelSeparator}{extraStr}");
                         }
                     }

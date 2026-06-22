@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA1805 // Do not initialize unnecessarily
+#pragma warning disable CA1805 // Do not initialize unnecessarily
 using System;
 
 namespace SadPencil.Ra2CsfFile
@@ -27,12 +27,6 @@ namespace SadPencil.Ra2CsfFile
         public bool OrderByKey { get; set; } = false;
 
         /// <summary>
-        /// If true, extra data (WRTS) is treated as UTF-8 text when exporting to Excel/CSV/TXT/LLF.
-        /// If false, extra data is Base64-encoded.
-        /// </summary>
-        public bool TreatExtraAsText { get; set; } = true;
-
-        /// <summary>
         /// If true, apply Encoding1252 workaround to extra data when reading CSF (not recommended).
         /// Extra data is typically binary or ASCII; applying this may corrupt binary data.
         /// </summary>
@@ -46,7 +40,6 @@ namespace SadPencil.Ra2CsfFile
             return this.Encoding1252ReadWorkaround == other.Encoding1252ReadWorkaround &&
                    this.Encoding1252WriteWorkaround == other.Encoding1252WriteWorkaround &&
                    this.OrderByKey == other.OrderByKey &&
-                   this.TreatExtraAsText == other.TreatExtraAsText &&
                    this.ApplyEncoding1252ToExtra == other.ApplyEncoding1252ToExtra;
         }
 
@@ -58,7 +51,6 @@ namespace SadPencil.Ra2CsfFile
                 hash = hash * 23 + Encoding1252ReadWorkaround.GetHashCode();
                 hash = hash * 23 + Encoding1252WriteWorkaround.GetHashCode();
                 hash = hash * 23 + OrderByKey.GetHashCode();
-                hash = hash * 23 + TreatExtraAsText.GetHashCode();
                 hash = hash * 23 + ApplyEncoding1252ToExtra.GetHashCode();
                 return hash;
             }

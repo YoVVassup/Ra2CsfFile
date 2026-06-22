@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text;
 using NPOI.SS.UserModel;
@@ -78,14 +78,7 @@ namespace SadPencil.Ra2CsfFile
                 string value = GetCellStringValue(row.GetCell(1)) ?? "";
                 string extraStr = GetCellStringValue(row.GetCell(2));
 
-                byte[] extra = null;
-                if (!string.IsNullOrEmpty(extraStr))
-                {
-                    if (options.TreatExtraAsText)
-                        extra = Encoding.UTF8.GetBytes(extraStr);
-                    else
-                        extra = Convert.FromBase64String(extraStr);
-                }
+                byte[] extra = ExtraDataHelper.Decode(extraStr);
 
                 csf.AddLabel(label, value, extra);
             }
@@ -146,11 +139,7 @@ namespace SadPencil.Ra2CsfFile
                 byte[] extra = csf.GetExtra(labelName);
                 if (extra != null)
                 {
-                    string extraStr;
-                    if (csf.Options.TreatExtraAsText)
-                        extraStr = Encoding.UTF8.GetString(extra);
-                    else
-                        extraStr = Convert.ToBase64String(extra);
+                    string extraStr = ExtraDataHelper.Encode(extra);
                     row.CreateCell(2).SetCellValue(extraStr);
                 }
             }
