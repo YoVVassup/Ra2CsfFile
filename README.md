@@ -1,9 +1,22 @@
 # CsfStudio - Red Alert 2 String Table Editor
 
-![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)  
-[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![C#](https://img.shields.io/badge/C%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white)](https://docs.microsoft.com/en-us/dotnet/csharp/)
+[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-512BD4.svg?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet-framework)
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/YoVVassup/Ra2CsfFile)
+
+---
+
+### Dependencies
+
+[![Costura.Fody](https://img.shields.io/badge/Costura.Fody-4.1.0-9B59B6?style=flat)](https://github.com/Fody/Costura)
+[![Newtonsoft.Json](https://img.shields.io/badge/Newtonsoft.Json-13.0.3-3553A5?style=flat)](https://www.newtonsoft.com/json)
+[![YamlDotNet](https://img.shields.io/badge/YamlDotNet-13.7.1-E0115F?style=flat)](https://github.com/aaubry/YamlDotNet)
+[![NPOI](https://img.shields.io/badge/NPOI-2.5.1-217346?style=flat&logo=microsoftexcel&logoColor=white)](https://github.com/nissl-lab/npoi)
+[![SharpZipLib](https://img.shields.io/badge/SharpZipLib-0.86.0-1E90FF?style=flat)](https://github.com/icsharpcode/SharpZipLib)
+[![BouncyCastle](https://img.shields.io/badge/BouncyCastle-1.8.6-333333?style=flat)](https://github.com/bcgit/bc-csharp)
+[![MSTest](https://img.shields.io/badge/Tests-MSTest-512BD4?style=flat&logo=visualstudio&logoColor=white)](https://docs.microsoft.com/en-us/visualstudio/test/)
 
 **CsfStudio** is a command‑line tool for working with **Red Alert 2** and **Yuri's Revenge** string table files (`.csf`). It supports **bidirectional conversion** between multiple formats, **set operations** on label collections, **map label checking**, **translation helpers**, and **encoding fixes**.
 
