@@ -1,19 +1,27 @@
 # SadPencil.Ra2CsfFile
 
-![C#](https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)  
-[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet-framework)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![C#](https://img.shields.io/badge/C%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white)](https://docs.microsoft.com/en-us/dotnet/csharp/)
+[![.NET Framework](https://img.shields.io/badge/.NET%20Framework-4.0-512BD4.svg?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/download/dotnet-framework)
+[![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows/)
+[![NuGet](https://img.shields.io/badge/NuGet-Package-004880?style=for-the-badge&logo=nuget&logoColor=white)](https://www.nuget.org/packages/SadPencil.Ra2CsfFile/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-**SadPencil.Ra2CsfFile** is a C# library for reading, editing, and writing **Red Alert 2** and **Yuri's Revenge** string table files (`.csf`). It supports **bidirectional conversion** between multiple formats, **set operations** on label collections, and **map label checking**.
+---
+
+### Dependencies
+
+[![Newtonsoft.Json](https://img.shields.io/badge/Newtonsoft.Json-13.0.3-3553A5?style=flat)](https://www.newtonsoft.com/json)
+[![YamlDotNet](https://img.shields.io/badge/YamlDotNet-13.7.1-E0115F?style=flat)](https://github.com/aaubry/YamlDotNet)
+[![NPOI](https://img.shields.io/badge/NPOI-2.5.1-217346?style=flat&logo=microsoftexcel&logoColor=white)](https://github.com/nissl-lab/npoi)
+[![ini-parser](https://img.shields.io/badge/ini--parser--netstandard-2.5.2-4CAF50?style=flat)](https://github.com/paillavel/iniparser-netstandard)
+
+**SadPencil.Ra2CsfFile** is a C# library for reading, editing, and writing **Red Alert 2** and **Yuri's Revenge** string table files (`.csf`). It supports **bidirectional conversion** between multiple formats and **map label checking**.
 
 ---
 
 ## Features
 
 - 🔄 **Format conversion** – CSF ↔ INI / JSON / YAML / LLF / TXT / Excel (XLSX/XLS) / CSV
-- 🧩 **Set operations** – union, subtraction, intersection, symmetric difference, case override
-- 🔍 **Diff & compare** – compare two CSF files for differences
 - 🗺️ **Map label check** – scan `.map`, `.mpr`, `.yrm` files to find missing labels in CSF
 - 🧠 **Preserves extra data (WRTS)** – all operations keep the optional binary block
 - 📝 **Label ordering** – maintain original order or sort alphabetically
@@ -172,6 +180,34 @@ HashSet<string> labels = CsfFileMapHelper.ExtractLabelsFromMapFolder(mapFolder);
 List<string> missing = CsfFileMapHelper.FindMissingLabels(csf, mapFolder);
 ```
 
+### CsfFile Convenience Wrappers
+
+```csharp
+// Load from any supported format
+CsfFile csf = CsfFile.LoadFromCsfFile(stream);
+CsfFile csf = CsfFile.LoadFromIniFile(stream);          // Obsolete, use CsfFileIniHelper
+CsfFile csf = CsfFile.LoadFromLlfFile(stream);
+CsfFile csf = CsfFile.LoadFromTxtFile(stream);
+CsfFile csf = CsfFile.LoadFromExcelFile(stream);
+CsfFile csf = CsfFile.LoadFromCsvFile(stream);
+CsfFile csf = CsfFile.LoadFromCsvFile(stream, delimiter, encoding);
+
+// Save to any supported format
+csf.WriteCsfFile(stream);
+csf.WriteIniFile(stream);                               // Obsolete, use CsfFileIniHelper
+csf.WriteLlfFile(stream, fileName);
+csf.WriteTxtFile(stream);
+csf.WriteExcelFile(stream, xlsx);
+csf.WriteCsvFile(stream);
+csf.WriteCsvFile(stream, delimiter, encoding);
+
+// JSON/YAML require using the helper classes directly
+CsfFileJsonHelper.LoadFromJsonFile(stream);
+CsfFileJsonHelper.WriteJsonFile(csf, stream);
+CsfFileYamlHelper.LoadFromYamlFile(stream);
+CsfFileYamlHelper.WriteYamlFile(csf, stream);
+```
+
 ### CsfFileOptions
 
 ```csharp
@@ -182,27 +218,6 @@ var options = new CsfFileOptions
     Encoding1252WriteWorkaround = false,    // Convert back on write (not recommended)
     ApplyEncoding1252ToExtra = false        // Apply workaround to extra data
 };
-```
-
----
-
-## Set Operations
-
-```csharp
-// Union (merge)
-CsfFile result = MergeOperation(file1, file2, "first-wins");
-
-// Subtraction
-CsfFile result = SubtractOperation(file1, file2);
-
-// Intersection
-CsfFile result = IntersectionOperation(file1, file2, "TODO_Different");
-
-// Symmetric difference
-CsfFile result = SymmetricDifferenceOperation(file1, file2, "TODO_Different");
-
-// Override case
-CsfFile result = OverrideCaseOperation(upstream, current);
 ```
 
 ---
@@ -219,16 +234,6 @@ CsfFile result = OverrideCaseOperation(upstream, current);
 ---
 
 ## Version History
-
-### v2.3.1
-- Added `ExtraDataHelper` for unified extra data handling
-- Removed Base64 mode, extra data always stored as UTF-8 text
-- Added `ValidateLengths()` method for label/value size warnings
-- Fixed CSV encoding for Excel compatibility (`Encoding.Default`)
-- Fixed `CheckMapsOperation` error handling
-- Added `InternalsVisibleTo` for unit tests
-- Added XML doc comments to `ExtraDataHelper`
-- 139 unit tests added (100% pass rate)
 
 ### v2.3.0
 - Added Excel (XLSX/XLS) format support via NPOI
